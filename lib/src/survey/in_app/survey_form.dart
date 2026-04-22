@@ -215,7 +215,29 @@ class SurveyForm extends StatelessWidget {
       hasUserInteracted: hasUserInteracted,
       inactivitySecondsRemaining: inactivitySecondsRemaining,
       currentQuestionType: question?.type,
-      child: content,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 400),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          final offsetAnimation = Tween<Offset>(
+            begin: const Offset(0.0, 0.02),
+            end: Offset.zero,
+          ).animate(animation);
+          
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: offsetAnimation,
+              child: child,
+            ),
+          );
+        },
+        child: KeyedSubtree(
+          key: ValueKey(question?.id ?? (currentStep == -1 ? 'welcome' : 'ending-$currentStepEnding')),
+          child: content,
+        ),
+      ),
     );
   }
 
