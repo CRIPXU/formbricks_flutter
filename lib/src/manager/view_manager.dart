@@ -53,11 +53,15 @@ class ViewManager {
     );
 
     /// Determine display mode and placement from survey config
-    final String surveyType = survey.type; // popover, modal, fullScreen
+    final String surveyType = survey.type; // popover, modal, fullScreen, app, etc.
     final String placement = survey.projectOverwrites?['placement'] ?? 'bottomRight';
 
+    // DEBUG: Log survey info to help diagnose positioning issues
+    debugPrint('🔔 Formbricks Debug: surveyType=$surveyType, placement=$placement');
+
     Alignment alignment = Alignment.center;
-    if (surveyType == 'popover') {
+    // For Formbricks, 'popover' or 'app' (if not fullScreen) should follow placement
+    if (surveyType == 'popover' || surveyType == 'app' || surveyType == 'modal') {
       switch (placement) {
         case 'bottomRight':
           alignment = Alignment.bottomRight;
@@ -83,7 +87,8 @@ class ViewManager {
     SurveyDisplayMode effectiveMode = surveyDisplayMode;
     if (surveyType == 'fullScreen') {
       effectiveMode = SurveyDisplayMode.fullScreen;
-    } else if (surveyType == 'popover' || surveyType == 'modal') {
+    } else if (surveyType == 'popover' || surveyType == 'modal' || (surveyType == 'app' && surveyDisplayMode != SurveyDisplayMode.fullScreen)) {
+      // If it's a popover, modal, or general 'app' survey, use our positioned dialog
       effectiveMode = SurveyDisplayMode.dialog;
     }
 

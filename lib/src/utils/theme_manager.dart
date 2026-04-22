@@ -2,188 +2,175 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../formbricks_flutter.dart';
 
-/// Builds a custom [ThemeData] for Formbricks surveys based on optional styling overrides.
-///
-/// Supports both light and dark mode. The `survey.styling` configuration can include separate
-/// values for `light` and `dark` modes for each color property.
-///
-/// If the survey does not specify `overwriteThemeStyling: true`, the provided `customTheme` or
-/// the current `Theme.of(context)` is returned unchanged.
+/// Builds a custom [ThemeData] for Formbricks surveys based on comprehensive 4.7+ styling.
 ThemeData buildTheme(BuildContext context, ThemeData? customTheme, Survey survey) {
-  /// Use customTheme if provided, otherwise use the theme from context
   final parentTheme = Theme.of(context);
   final baseTheme = customTheme ?? parentTheme;
-
-  /// Check for styling overrides in the survey config
   final formBricksStyling = survey.styling;
 
-  /// If overwriteThemeStyling is false or not set, return base theme unchanged
-  if (!(formBricksStyling != null && formBricksStyling.overwriteThemeStyling == true)) {
+  if (!(formBricksStyling != null && (formBricksStyling.overwriteThemeStyling == true || formBricksStyling.allowStyleOverwrite == true))) {
     return baseTheme;
   }
 
-  /// Determine whether we are currently in dark mode
   final brightness = baseTheme.brightness;
-  final isDarkMode = brightness == Brightness.dark;
+  final isDarkMode = brightness == Brightness.dark || formBricksStyling.isDarkModeEnabled == true;
 
-  /// Helper function to parse hex color strings into [Color] objects.
-  /// If parsing fails, the [fallback] color is returned.
   Color parseColor(String? hex, {required Color fallback}) {
     if (hex == null || hex.isEmpty) return fallback;
     hex = hex.replaceFirst('#', '');
-    if (hex.length == 6) hex = 'FF$hex'; // Add alpha channel if missing
+    if (hex.length == 6) hex = 'FF$hex';
     return Color(int.tryParse('0x$hex') ?? fallback.toARGB32());
   }
 
-  /// Utility function to get a color from styling config based on brightness mode.
   Color themedColor(Map<String, dynamic>? colorMap, {required Color fallback}) {
+    if (colorMap == null) return fallback;
     return parseColor(
-      isDarkMode && colorMap != null && colorMap.containsKey('dark')  ? colorMap['dark'] : colorMap?['light'],
+      isDarkMode && colorMap.containsKey('dark') ? colorMap['dark'] : colorMap['light'],
       fallback: fallback,
     );
   }
 
-  /// Extract style values, using theme fallbacks where applicable
-  final brandColor = themedColor(
-    formBricksStyling.brandColor,
-    fallback: baseTheme.primaryColor,
-  );
+  // --- 1. Card & Global ---
+  final cardStyling = formBricksStyling.card;
+  final globalRoundness = cardStyling?.roundness ?? formBricksStyling.roundness ?? 8.0;
+  final cardBgColor = themedColor(cardStyling?.backgroundColor ?? formBricksStyling.cardBackgroundColor, fallback: baseTheme.cardColor);
+  final cardBorderColor = themedColor(cardStyling?.borderColor ?? formBricksStyling.cardBorderColor, fallback: Colors.transparent);
+  final highlightColor = themedColor(cardStyling?.highlightBorderColor ?? formBricksStyling.highlightBorderColor, fallback: Colors.blueAccent);
 
-  final inputColor = themedColor(
-    formBricksStyling.inputColor,
-    fallback: baseTheme.inputDecorationTheme.fillColor ?? Colors.grey[100]!,
-  );
+  // --- 2. Headline ---
+  final headlineStyling = formBricksStyling.headline;
+  final headlineColor = themedColor(headlineStyling?.color ?? formBricksStyling.questionColor, fallback: baseTheme.textTheme.headlineMedium?.color ?? Colors.black);
+  final descColor = themedColor(headlineStyling?.descriptionColor, fallback: (baseTheme.textTheme.bodyMedium?.color ?? Colors.black).withOpacity(0.7));
 
-  final questionColor = themedColor(
-    formBricksStyling.questionColor,
-    fallback: baseTheme.textTheme.bodyLarge?.color ?? Colors.black,
-  );
+  // --- 3. Buttons ---
+  final buttonStyling = formBricksStyling.button;
+  final btnBgColor = themedColor(buttonStyling?.backgroundColor ?? formBricksStyling.brandColor, fallback: baseTheme.primaryColor);
+  final btnTextColor = themedColor(buttonStyling?.textColor, fallback: Colors.white);
+  final btnRadius = (buttonStyling?.borderRadius ?? globalRoundness).toDouble();
 
-  final cardBorderColor = themedColor(
-    formBricksStyling.cardBorderColor,
-    fallback: Colors.transparent,
-  );
+  // --- 4. Inputs ---
+  final inputStyling = formBricksStyling.input;
+  final inputBgColor = themedColor(inputStyling?.backgroundColor ?? formBricksStyling.inputColor, fallback: baseTheme.inputDecorationTheme.fillColor ?? Colors.grey[100]!);
+  final inputBorderColor = themedColor(inputStyling?.borderColor ?? formBricksStyling.inputBorderColor, fallback: Colors.grey);
+  final inputTextColor = themedColor(inputStyling?.textColor, fallback: baseTheme.textTheme.bodyMedium?.color ?? Colors.black);
+  final inputRadius = (inputStyling?.borderRadius ?? globalRoundness).toDouble();
 
-  final cardShadowColor = themedColor(
-    formBricksStyling.cardShadowColor,
-    fallback: Colors.black12,
-  );
+  // --- 5. Progress ---
+  final progressStyling = formBricksStyling.progress;
+  final progressTrackColor = themedColor(progressStyling?.trackBackgroundColor, fallback: Colors.grey[300]!);
+  final progressIndicatorColor = themedColor(progressStyling?.indicatorBackgroundColor ?? formBricksStyling.brandColor, fallback: btnBgColor);
 
-  final inputBorderColor = themedColor(
-    formBricksStyling.inputBorderColor,
-    fallback: Colors.grey,
-  );
-
-  final cardBackgroundColor = themedColor(
-    formBricksStyling.cardBackgroundColor,
-    fallback: baseTheme.cardColor,
-  );
-
-  final highlightBorderColor = themedColor(
-    formBricksStyling.highlightBorderColor,
-    fallback: Colors.blueAccent,
-  );
-
-  final roundness = double.tryParse('${formBricksStyling.roundness}') ?? 8.0;
-
-  /// Build and return the custom ThemeData
   return baseTheme.copyWith(
-    primaryColor: brandColor,
-    scaffoldBackgroundColor: cardBackgroundColor,
-    cardColor: cardBackgroundColor,
-
-    /// Card appearance
+    primaryColor: btnBgColor,
+    scaffoldBackgroundColor: cardBgColor,
+    cardColor: cardBgColor,
+    brightness: isDarkMode ? Brightness.dark : Brightness.light,
+    
     cardTheme: baseTheme.cardTheme.copyWith(
-      color: cardBackgroundColor,
-      shadowColor: cardShadowColor,
+      color: cardBgColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(roundness),
+        borderRadius: BorderRadius.circular(globalRoundness),
         side: BorderSide(color: cardBorderColor),
       ),
     ),
 
-    /// Input decoration (text fields, dropdowns, etc.)
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: btnBgColor,
+        foregroundColor: btnTextColor,
+        minimumSize: Size(0, (buttonStyling?.height ?? 40).toDouble()),
+        textStyle: TextStyle(
+          fontSize: (buttonStyling?.fontSize ?? 16).toDouble(),
+          fontWeight: buttonStyling?.fontWeight == 'bold' ? FontWeight.bold : FontWeight.normal,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(btnRadius),
+        ),
+        elevation: 0,
+        padding: EdgeInsets.symmetric(
+          horizontal: (buttonStyling?.paddingX ?? 24).toDouble(),
+          vertical: (buttonStyling?.paddingY ?? 12).toDouble(),
+        ),
+      ),
+    ),
+
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: inputColor,
+      fillColor: inputBgColor,
+      labelStyle: TextStyle(color: inputTextColor, fontSize: (inputStyling?.fontSize ?? 14).toDouble()),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(roundness),
+        borderRadius: BorderRadius.circular(inputRadius),
+        borderSide: BorderSide(color: inputBorderColor),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(inputRadius),
         borderSide: BorderSide(color: inputBorderColor),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(roundness),
-        borderSide: BorderSide(color: highlightBorderColor, width: 2),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(roundness),
-        borderSide: BorderSide(color: inputBorderColor),
+        borderRadius: BorderRadius.circular(inputRadius),
+        borderSide: BorderSide(color: highlightColor, width: 2),
       ),
     ),
 
-    /// Text styles (for questions, etc.)
     textTheme: baseTheme.textTheme.copyWith(
-      headlineMedium: baseTheme.textTheme.headlineMedium?.copyWith(color: questionColor, fontSize: 18, fontWeight: FontWeight.bold),
-      titleMedium: baseTheme.textTheme.titleMedium?.copyWith(color: questionColor, fontWeight: FontWeight.w300),
-      bodyMedium: baseTheme.textTheme.bodyMedium?.copyWith(color: questionColor),
-      bodySmall: baseTheme.textTheme.bodySmall?.copyWith(color: questionColor),
-    ),
-
-    /// Radio buttons
-    radioTheme: baseTheme.radioTheme.copyWith(
-      fillColor: WidgetStateProperty.all(brandColor),
-    ),
-
-    /// Elevated button style
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ButtonStyle(
-        backgroundColor: WidgetStateProperty.all(brandColor),
-        foregroundColor: WidgetStateProperty.all(Colors.white),
-        shape: WidgetStateProperty.all(
-          RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(roundness),
-          ),
-        ),
+      headlineMedium: baseTheme.textTheme.headlineMedium?.copyWith(
+        color: headlineColor,
+        fontSize: (headlineStyling?.fontSize ?? 18).toDouble(),
+        fontWeight: headlineStyling?.fontWeight == 'bold' ? FontWeight.bold : FontWeight.normal,
+      ),
+      bodyMedium: baseTheme.textTheme.bodyMedium?.copyWith(
+        color: descColor,
+        fontSize: (headlineStyling?.descriptionFontSize ?? 14).toDouble(),
       ),
     ),
 
-    /// Outlined button style
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: ButtonStyle(
-        foregroundColor: WidgetStateProperty.all(brandColor),
-        backgroundColor: WidgetStateProperty.all(Colors.white),
-        shape: WidgetStateProperty.all(
-          RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(roundness),
-            side: BorderSide(color: brandColor, width: 2),
-          ),
-        ),
-      ),
-    ),
-
-    /// Progress indicators (like loading spinners)
     progressIndicatorTheme: ProgressIndicatorThemeData(
-      color: brandColor,
+      color: progressIndicatorColor,
+      linearTrackColor: progressTrackColor,
     ),
 
-    /// Custom theme extension for roundness
     extensions: <ThemeExtension<dynamic>>[
-      MyCustomTheme(styleRoundness: roundness),
+      MyCustomTheme(
+        styleRoundness: globalRoundness,
+        optionStyling: formBricksStyling.option,
+        progressStyling: progressStyling,
+        cardStyling: cardStyling,
+        isDarkMode: isDarkMode,
+      ),
     ],
   );
 }
 
-/// Custom [ThemeExtension] to support reading additional styling properties from the theme.
-/// This allows us to access `MyCustomTheme.of(context)?.styleRoundness` anywhere in the app.
 @immutable
 class MyCustomTheme extends ThemeExtension<MyCustomTheme> {
   final double? styleRoundness;
+  final OptionStyling? optionStyling;
+  final ProgressStyling? progressStyling;
+  final CardStyling? cardStyling;
+  final bool isDarkMode;
 
-  const MyCustomTheme({this.styleRoundness});
+  const MyCustomTheme({
+    this.styleRoundness,
+    this.optionStyling,
+    this.progressStyling,
+    this.cardStyling,
+    this.isDarkMode = false,
+  });
 
   @override
-  MyCustomTheme copyWith({double? styleRoundness}) {
+  MyCustomTheme copyWith({
+    double? styleRoundness,
+    OptionStyling? optionStyling,
+    ProgressStyling? progressStyling,
+    CardStyling? cardStyling,
+    bool? isDarkMode,
+  }) {
     return MyCustomTheme(
       styleRoundness: styleRoundness ?? this.styleRoundness,
+      optionStyling: optionStyling ?? this.optionStyling,
+      progressStyling: progressStyling ?? this.progressStyling,
+      cardStyling: cardStyling ?? this.cardStyling,
+      isDarkMode: isDarkMode ?? this.isDarkMode,
     );
   }
 
@@ -192,6 +179,10 @@ class MyCustomTheme extends ThemeExtension<MyCustomTheme> {
     if (other is! MyCustomTheme) return this;
     return MyCustomTheme(
       styleRoundness: lerpDouble(styleRoundness, other.styleRoundness, t),
+      optionStyling: other.optionStyling,
+      progressStyling: other.progressStyling,
+      cardStyling: other.cardStyling,
+      isDarkMode: other.isDarkMode,
     );
   }
 }
