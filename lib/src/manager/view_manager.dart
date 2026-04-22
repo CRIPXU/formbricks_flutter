@@ -114,6 +114,37 @@ class ViewManager {
     /// Render survey as an alert dialog with positioning.
     else if (effectiveMode == SurveyDisplayMode.dialog) {
       final themeData = buildTheme(context, formbricksInAppConfig?.customTheme, survey);
+      final customTheme = themeData.extension<MyCustomTheme>();
+      
+      // Extract arrangement
+      final String? arrangement = customTheme?.cardStyling?.arrangement ?? 
+          (survey.styling?.cardArrangement is String ? survey.styling?.cardArrangement as String : null);
+      
+      // Extract colors for decoration
+      final cardStyling = customTheme?.cardStyling;
+      final formBricksStyling = survey.styling;
+      
+      // Helper to parse colors (already done in theme, but we need them for decoration)
+      Color parseColor(String? hex, {required Color fallback}) {
+        if (hex == null || hex.isEmpty) return fallback;
+        hex = hex.replaceFirst('#', '');
+        if (hex.length == 6) hex = 'FF$hex';
+        return Color(int.tryParse('0x$hex') ?? fallback.value);
+      }
+
+      Color themedColor(Map<String, dynamic>? colorMap, {required Color fallback}) {
+        if (colorMap == null) return fallback;
+        bool isDark = customTheme?.isDarkMode ?? false;
+        return parseColor(
+          isDark && colorMap.containsKey('dark') ? colorMap['dark'] : colorMap['light'],
+          fallback: fallback,
+        );
+      }
+
+      final cardBorderColor = themedColor(cardStyling?.borderColor ?? formBricksStyling?.cardBorderColor, fallback: Colors.transparent);
+      final highlightColor = themedColor(cardStyling?.highlightBorderColor ?? formBricksStyling?.highlightBorderColor, fallback: Colors.transparent);
+      final double roundness = customTheme?.styleRoundness ?? 8.0;
+
       showGeneralDialog(
         context: context,
         barrierDismissible: survey.projectOverwrites?['clickOutsideClose'] ?? false,
@@ -128,22 +159,38 @@ class ViewManager {
                 child: Theme(
                   data: themeData,
                   child: Container(
+                    clipBehavior: Clip.antiAlias, // Ensure highlight doesn't bleed
                     decoration: BoxDecoration(
                       color: themeData.cardColor,
-                      borderRadius: BorderRadius.circular(themeData.extension<MyCustomTheme>()?.styleRoundness ?? 8.0),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                      borderRadius: BorderRadius.circular(roundness),
+                      border: cardBorderColor != Colors.transparent ? Border.all(color: cardBorderColor) : null,
+                      boxShadow: arrangement == 'compact' 
+                        ? [] // Compact usually has no shadow or very subtle
+                        : [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                     ),
                     constraints: BoxConstraints(
-                      maxWidth: 400,
+                      maxWidth: arrangement == 'compact' ? 360 : 400,
                       maxHeight: MediaQuery.of(context).size.height * 0.8,
                     ),
-                    child: widgetBody,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Highlight border if specified
+                        if (highlightColor != Colors.transparent)
+                          Container(
+                            height: 4,
+                            width: double.infinity,
+                            color: highlightColor,
+                          ),
+                        Flexible(child: widgetBody),
+                      ],
+                    ),
                   ),
                 ),
               ),
