@@ -52,8 +52,43 @@ class ViewManager {
       ratingQuestionBuilder: formbricksInAppConfig?.ratingQuestionBuilder,
     );
 
+    /// Determine display mode and placement from survey config
+    final String surveyType = survey.type; // popover, modal, fullScreen
+    final String placement = survey.projectOverwrites?['placement'] ?? 'bottomRight';
+
+    Alignment alignment = Alignment.center;
+    if (surveyType == 'popover') {
+      switch (placement) {
+        case 'bottomRight':
+          alignment = Alignment.bottomRight;
+          break;
+        case 'bottomLeft':
+          alignment = Alignment.bottomLeft;
+          break;
+        case 'topRight':
+          alignment = Alignment.topRight;
+          break;
+        case 'topLeft':
+          alignment = Alignment.topLeft;
+          break;
+        case 'center':
+          alignment = Alignment.center;
+          break;
+        default:
+          alignment = Alignment.bottomRight;
+      }
+    }
+
+    /// Determine which mode to actually use
+    SurveyDisplayMode effectiveMode = surveyDisplayMode;
+    if (surveyType == 'fullScreen') {
+      effectiveMode = SurveyDisplayMode.fullScreen;
+    } else if (surveyType == 'popover' || surveyType == 'modal') {
+      effectiveMode = SurveyDisplayMode.dialog;
+    }
+
     /// Render survey as full screen page.
-    if (surveyDisplayMode == SurveyDisplayMode.fullScreen) {
+    if (effectiveMode == SurveyDisplayMode.fullScreen) {
       final widget = Theme(
         data: buildTheme(context, formbricksInAppConfig?.customTheme, survey),
         child: Scaffold(
@@ -71,23 +106,51 @@ class ViewManager {
             : MaterialPageRoute(builder: (context) => widget),
       );
     }
-    /// Render survey as an alert dialog.
-    else if (surveyDisplayMode == SurveyDisplayMode.dialog) {
-      final widget = Theme(
-        data: buildTheme(context, formbricksInAppConfig?.customTheme, survey),
-        child: widgetBody,
-      );
-      showDialog(
+    /// Render survey as an alert dialog with positioning.
+    else if (effectiveMode == SurveyDisplayMode.dialog) {
+      final themeData = buildTheme(context, formbricksInAppConfig?.customTheme, survey);
+      showGeneralDialog(
         context: context,
-        barrierDismissible:
-        survey.projectOverwrites?['clickOutsideClose'] ?? false,
-        builder: (context) => AlertDialog(
-          backgroundColor: Theme.of(context).cardColor,
-          titlePadding: EdgeInsets.zero,
-          contentPadding: EdgeInsets.zero,
-          actionsPadding: EdgeInsets.zero,
-          content: widget,
-        ),
+        barrierDismissible: survey.projectOverwrites?['clickOutsideClose'] ?? false,
+        barrierLabel: 'Survey',
+        pageBuilder: (context, anim1, anim2) {
+          return Align(
+            alignment: alignment,
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Material(
+                color: Colors.transparent,
+                child: Theme(
+                  data: themeData,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: themeData.cardColor,
+                      borderRadius: BorderRadius.circular(themeData.extension<MyCustomTheme>()?.styleRoundness ?? 8.0),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    constraints: BoxConstraints(
+                      maxWidth: 400,
+                      maxHeight: MediaQuery.of(context).size.height * 0.8,
+                    ),
+                    child: widgetBody,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+        transitionBuilder: (context, anim1, anim2, child) {
+          return FadeTransition(
+            opacity: anim1,
+            child: child,
+          );
+        },
       );
     }
     /// Render survey as a modal bottom sheet.
@@ -100,7 +163,7 @@ class ViewManager {
         context: context,
         isDismissible: survey.projectOverwrites?['clickOutsideClose'] ?? false,
         backgroundColor: Colors.transparent,
-        isScrollControlled: true, // Permitir que el contenido defina su tamaño
+        isScrollControlled: true,
         builder: (context) => ConstrainedBox(
           constraints: BoxConstraints(
             maxHeight: MediaQuery.of(context).size.height * 0.9,

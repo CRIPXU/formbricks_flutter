@@ -44,17 +44,21 @@ class SurveyButtons extends StatelessWidget {
                     survey.isBackButtonHidden == false)
                   OutlinedButton(
                     onPressed: previousStep,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
                     child: Text(
                       stripHtml(previousLabel).isNotEmpty 
                           ? stripHtml(previousLabel) 
                           : AppLocalizations.of(context)!.back,
                       style: const TextStyle(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
                     ),
                   ),
                 if (currentStep > 0 && survey.isBackButtonHidden == true)
-                  SizedBox.shrink(),
+                  const SizedBox.shrink(),
 
                 if (nextLabel != null)
                   if (currentStep == -1 ||
@@ -70,12 +74,17 @@ class SurveyButtons extends StatelessWidget {
                               Navigator.of(context).pop();
                             }
                           : nextStep,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        elevation: 0,
+                      ),
                       child: Text(
                         stripHtml(nextLabel).isNotEmpty 
                             ? stripHtml(nextLabel) 
                             : AppLocalizations.of(context)!.next,
                         style: const TextStyle(
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
                       ),
                     ),
