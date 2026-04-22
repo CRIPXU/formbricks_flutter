@@ -29,6 +29,7 @@ class ViewManager {
       estimatedTimeInSecs,
       surveyDisplayMode,
       survey.projectOverwrites?['clickOutsideClose'] ?? false,
+      customTheme: formbricksInAppConfig?.customTheme,
       addressQuestionBuilder: formbricksInAppConfig?.addressQuestionBuilder,
       calQuestionBuilder: formbricksInAppConfig?.calQuestionBuilder,
       consentQuestionBuilder: formbricksInAppConfig?.consentQuestionBuilder,
@@ -154,6 +155,7 @@ class ViewManager {
       int estimatedTimeInSecs,
       SurveyDisplayMode surveyDisplayMode,
       bool clickOutsideClose, {
+        ThemeData? customTheme,
         QuestionWidgetBuilder? addressQuestionBuilder,
         QuestionWidgetBuilder? calQuestionBuilder,
         QuestionWidgetBuilder? consentQuestionBuilder,
@@ -177,6 +179,7 @@ class ViewManager {
       surveyDisplayMode: surveyDisplayMode,
       estimatedTimeInSecs: estimatedTimeInSecs,
       clickOutsideClose: clickOutsideClose,
+      customTheme: customTheme,
       addressQuestionBuilder: addressQuestionBuilder,
       calQuestionBuilder: calQuestionBuilder,
       consentQuestionBuilder: consentQuestionBuilder,

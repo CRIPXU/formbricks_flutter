@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../../formbricks_flutter.dart';
+import '../../utils/theme_manager.dart';
 import '../../models/environment/logic.dart';
 import '../../utils/helper.dart';
 import 'components/error.dart';
@@ -20,6 +21,7 @@ class SurveyWidget extends StatefulWidget {
   final SurveyDisplayMode surveyDisplayMode;
   final VoidCallback? onComplete;
   final bool clickOutsideClose;
+  final ThemeData? customTheme;
 
   /// Optional custom question widget builders
   final QuestionWidgetBuilder? addressQuestionBuilder;
@@ -47,6 +49,7 @@ class SurveyWidget extends StatefulWidget {
     required this.surveyDisplayMode,
     required this.onComplete,
     required this.clickOutsideClose,
+    this.customTheme,
     this.addressQuestionBuilder,
     this.calQuestionBuilder,
     this.consentQuestionBuilder,
@@ -746,46 +749,51 @@ class SurveyWidgetState extends State<SurveyWidget> {
     if (isLoading) return SurveyLoading();
     if (error != null && kDebugMode) return SurveyError(errorMessage: error.toString());
 
-    return Container(
-      color: Theme.of(context).cardColor,
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: SurveyForm(
-        client: widget.client,
-        userId: widget.userId,
-        currentStep: _currentStep,
-        currentBlockIndex: _currentBlockIndex,
-        currentElementIndex: _currentElementIndex,
-        isLoading: isLoading,
-        formKey: formKey,
-        nextStep: nextStep,
-        previousStep: goBack,
-        onResponse: _onResponse,
-        survey: survey,
-        responses: responses,
-        surveyDisplayMode: widget.surveyDisplayMode,
-        requiredAnswers: _requiredAnswers,
-        estimatedTimeInSecs: widget.estimatedTimeInSecs,
-        currentStepEnding: _currentEndingStep,
-        nextStepEnding: _endingStep,
-        onComplete: widget.onComplete,
-        clickOutsideClose: widget.clickOutsideClose,
-        hasUserInteracted: hasUserInteracted,
-        inactivitySecondsRemaining: _inactivitySecondsRemaining,
-        // Custom widget builders
-        calQuestionBuilder: widget.ctaQuestionBuilder,
-        consentQuestionBuilder: widget.consentQuestionBuilder,
-        contactInfoQuestionBuilder: widget.contactInfoQuestionBuilder,
-        ctaQuestionBuilder: widget.ctaQuestionBuilder,
-        dateQuestionBuilder: widget.dateQuestionBuilder,
-        fileUploadQuestionBuilder: widget.fileUploadQuestionBuilder,
-        freeTextQuestionBuilder: widget.freeTextQuestionBuilder,
-        matrixQuestionBuilder: widget.matrixQuestionBuilder,
-        multipleChoiceMultiQuestionBuilder: widget.multipleChoiceMultiQuestionBuilder,
-        multipleChoiceSingleQuestionBuilder: widget.multipleChoiceSingleQuestionBuilder,
-        npsQuestionBuilder: widget.npsQuestionBuilder,
-        pictureSelectionQuestionBuilder: widget.pictureSelectionQuestionBuilder,
-        rankingQuestionBuilder: widget.rankingQuestionBuilder,
-        ratingQuestionBuilder: widget.ratingQuestionBuilder,
+    final customTheme = buildTheme(context, widget.customTheme, survey);
+
+    return Theme(
+      data: customTheme,
+      child: Container(
+        color: customTheme.scaffoldBackgroundColor,
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: SurveyForm(
+          client: widget.client,
+          userId: widget.userId,
+          currentStep: _currentStep,
+          currentBlockIndex: _currentBlockIndex,
+          currentElementIndex: _currentElementIndex,
+          isLoading: isLoading,
+          formKey: formKey,
+          nextStep: nextStep,
+          previousStep: goBack,
+          onResponse: _onResponse,
+          survey: survey,
+          responses: responses,
+          surveyDisplayMode: widget.surveyDisplayMode,
+          requiredAnswers: _requiredAnswers,
+          estimatedTimeInSecs: widget.estimatedTimeInSecs,
+          currentStepEnding: _currentEndingStep,
+          nextStepEnding: _endingStep,
+          onComplete: widget.onComplete,
+          clickOutsideClose: widget.clickOutsideClose,
+          hasUserInteracted: hasUserInteracted,
+          inactivitySecondsRemaining: _inactivitySecondsRemaining,
+          // Custom widget builders
+          calQuestionBuilder: widget.ctaQuestionBuilder,
+          consentQuestionBuilder: widget.consentQuestionBuilder,
+          contactInfoQuestionBuilder: widget.contactInfoQuestionBuilder,
+          ctaQuestionBuilder: widget.ctaQuestionBuilder,
+          dateQuestionBuilder: widget.dateQuestionBuilder,
+          fileUploadQuestionBuilder: widget.fileUploadQuestionBuilder,
+          freeTextQuestionBuilder: widget.freeTextQuestionBuilder,
+          matrixQuestionBuilder: widget.matrixQuestionBuilder,
+          multipleChoiceMultiQuestionBuilder: widget.multipleChoiceMultiQuestionBuilder,
+          multipleChoiceSingleQuestionBuilder: widget.multipleChoiceSingleQuestionBuilder,
+          npsQuestionBuilder: widget.npsQuestionBuilder,
+          pictureSelectionQuestionBuilder: widget.pictureSelectionQuestionBuilder,
+          rankingQuestionBuilder: widget.rankingQuestionBuilder,
+          ratingQuestionBuilder: widget.ratingQuestionBuilder,
+        ),
       ),
     );
   }
