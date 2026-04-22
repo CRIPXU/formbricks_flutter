@@ -123,6 +123,11 @@ class SurveyContent extends StatelessWidget {
     /// Progress bar value for inactivity countdown (used for auto-close)
     double inactivityProgress = inactivitySecondsRemaining / (survey.autoClose ?? 10).toDouble();
 
+    final bool useBlocks = survey.blocks != null && survey.blocks!.isNotEmpty;
+    final int totalQuestions = useBlocks
+        ? survey.blocks!.fold(0, (sum, b) => sum + b.questions.length)
+        : (survey.questions?.length ?? 0);
+
     return SizedBox(
       width: width,
       height: height,
@@ -217,7 +222,7 @@ class SurveyContent extends StatelessWidget {
           ),
 
           /// Bottom progress bar and copyright section
-          currentStep >= (survey.questions?.length ?? 0)
+          currentStep >= totalQuestions
               ? SizedBox.shrink()
               : Container(
             width: width,

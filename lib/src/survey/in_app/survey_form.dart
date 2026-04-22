@@ -142,8 +142,8 @@ class SurveyForm extends StatelessWidget {
       question = survey.questions?[currentStep];
       if (question != null) {
         content = _buildQuestionWidget(question);
-        nextLabel = question.buttonLabel?['default'];
-        previousLabel = question.backButtonLabel?['default'];
+        nextLabel = question.buttonLabel?['default'] ?? AppLocalizations.of(context)!.next;
+        previousLabel = question.backButtonLabel?['default'] ?? AppLocalizations.of(context)!.back;
       } else {
         content = Container();
       }
@@ -155,8 +155,8 @@ class SurveyForm extends StatelessWidget {
         if (question != null) {
           content = _buildQuestionWidget(question);
           // Use block label if question label is null
-          nextLabel = question.buttonLabel?['default'] ?? block.buttonLabel?['default'];
-          previousLabel = question.backButtonLabel?['default'] ?? block.backButtonLabel?['default'];
+          nextLabel = question.buttonLabel?['default'] ?? block.buttonLabel?['default'] ?? AppLocalizations.of(context)!.next;
+          previousLabel = question.backButtonLabel?['default'] ?? block.backButtonLabel?['default'] ?? AppLocalizations.of(context)!.back;
         } else {
           content = Container();
         }
@@ -198,7 +198,7 @@ class SurveyForm extends StatelessWidget {
     /// Final assembled layout
     return SurveyContent(
       progress: (progressIndex + 1) / totalSteps,
-      currentStep: currentStep,
+      currentStep: progressIndex,
       nextStep: nextStep,
       previousStep: previousStep,
       nextLabel: nextLabel,

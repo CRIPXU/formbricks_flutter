@@ -68,7 +68,7 @@ class EndWidget extends StatelessWidget {
             ),
           ),
         Text(
-          translate(ending.headline, context) ?? "",
+          stripHtml(translate(ending.headline, context)),
           style:
               theme.textTheme.headlineMedium ??
               const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -78,7 +78,7 @@ class EndWidget extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 8.0),
             child: Text(
-              translate(ending.subheader, context) ?? '',
+              stripHtml(translate(ending.subheader, context)),
               style: theme.textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
