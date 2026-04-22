@@ -203,7 +203,7 @@ class SurveyForm extends StatelessWidget {
       onResponse: onResponse,
       survey: survey,
       response: responses[question?.id],
-      contentHeight: MediaQuery.of(context).size.height,
+      contentHeight: null,
       spacerHeight: 0,
       surveyDisplayMode: surveyDisplayMode,
       estimatedTimeInSecs: estimatedTimeInSecs,

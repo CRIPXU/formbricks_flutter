@@ -224,8 +224,12 @@ class UserManager {
 
       SurveyManager.instance.filterSurveys();
       _startSyncTimer();
-    } catch (e, st) {
-      Log.instance.e("Failed to sync user state: $e, stackTrace: $st");
+    } catch (e, stackTrace) {
+      if (e.toString().contains("403")) {
+        Log.instance.w("⚠️ Advertencia: El servidor requiere licencia Enterprise para identificación de usuarios. Continuando en modo limitado.");
+        return;
+      }
+      Log.instance.e("⛔ Failed to sync user state: $e");
     }
   }
 

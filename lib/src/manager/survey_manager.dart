@@ -158,13 +158,15 @@ class SurveyManager {
     final responses = UserManager.instance.responses;
     final segments = UserManager.instance.segments;
 
-    List<Survey> result = _filterSurveysBasedOnDisplayType(surveys, displays, responses);
+    Log.instance.d("DEBUG: Encuestas recibidas del servidor: ${surveys.length}");
+    List<Survey> result = surveys;
     result = _filterSurveysBasedOnRecontactDays(result, holder.data?.data.project.recontactDays?.toInt());
+    Log.instance.d("DEBUG: Encuestas tras recontactDays: ${result.length}");
 
     if (UserManager.instance.userId != null && segments.isNotEmpty) {
-      // Comentamos el filtrado para debug
+      // Comentamos los filtrados para debug
       // result = _filterSurveysByDisplayCounts(result, displays);
-      result = _filterSurveysBasedOnSegments(result, segments);
+      // result = _filterSurveysBasedOnSegments(result, segments);
     }
 
     filteredSurveys
@@ -232,10 +234,16 @@ class SurveyManager {
     _displayTimer = Timer(Duration(milliseconds: (timeout * 1000).toInt()), () {
       if (surveyPlatform == SurveyPlatform.inApp) {
         int estimatedTimeInSecs = calculateEstimatedTime(targetSurvey);
+        final navContext = buildContext ?? Formbricks.instance.navigatorKey.currentContext ?? context;
+        if (navContext == null) {
+          Log.instance.e("⛔ Error: No se puede mostrar la encuesta porque no se encontró un contexto válido.");
+          return;
+        }
+
         ViewManager.showSurveyInApp(
-          buildContext ?? Formbricks.instance.navigatorKey.currentContext ?? context,
+          navContext,
           client,
-          UserManager.instance.userId!,
+          UserManager.instance.userId ?? "anonymous_user",
           targetSurvey,
           surveyDisplayMode,
           estimatedTimeInSecs,
