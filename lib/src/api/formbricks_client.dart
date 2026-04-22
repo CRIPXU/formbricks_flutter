@@ -85,10 +85,15 @@ class FormbricksClient {
 
     if (response.statusCode >= 200 && response.statusCode < 300){
       var originalResponseJson = jsonDecode(response.body);
-      return EnvironmentDataHolder.fromJson({
-        "data": originalResponseJson['data'],
-        "originalResponseMap": originalResponseJson
-      });
+      try {
+        return EnvironmentDataHolder.fromJson({
+          "data": originalResponseJson['data'],
+          "originalResponseMap": originalResponseJson
+        });
+      } catch (e) {
+        print("RAW RESPONSE: ${response.body}");
+        rethrow;
+      }
     }
     throw Exception('Failed to fetch environment data: ${response.statusCode} - ${response.body}');
   }

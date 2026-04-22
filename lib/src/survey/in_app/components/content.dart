@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 
 import '../../../../formbricks_flutter.dart';
@@ -142,23 +143,41 @@ class SurveyContent extends StatelessWidget {
 
           /// Top-right close button (only in modal/dialog mode)
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              surveyDisplayMode == SurveyDisplayMode.fullScreen
-                  ? SizedBox(height: MediaQuery.of(context).padding.top + kToolbarHeight)
-                  : SizedBox.shrink(),
-              clickOutsideClose
-                  ? IconButton(
-                onPressed: () {
-                  onComplete?.call(); /// Trigger completion logic
-                  Navigator.of(context).maybePop(); /// Close the dialog/modal
-                },
-                icon: Icon(
-                  LineAwesomeIcons.times_solid,
-                  color: Theme.of(context).iconTheme.color?.withAlpha((255 * 0.6).round()),
-                ),
-              )
-                  : SizedBox.shrink(),
+              if (survey.styling?.background?.logo?['url'] != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 16.0, top: 8.0),
+                  child: CachedNetworkImage(
+                    imageUrl: survey.styling!.background!.logo!['url'] as String,
+                    height: 32,
+                    fit: BoxFit.contain,
+                    placeholder: (context, url) => const SizedBox.shrink(),
+                    errorWidget: (context, url, error) => const SizedBox.shrink(),
+                  ),
+                )
+              else
+                const SizedBox.shrink(),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  surveyDisplayMode == SurveyDisplayMode.fullScreen
+                      ? SizedBox(height: MediaQuery.of(context).padding.top + kToolbarHeight)
+                      : SizedBox.shrink(),
+                  clickOutsideClose
+                      ? IconButton(
+                    onPressed: () {
+                      onComplete?.call(); /// Trigger completion logic
+                      Navigator.of(context).maybePop(); /// Close the dialog/modal
+                    },
+                    icon: Icon(
+                      LineAwesomeIcons.times_solid,
+                      color: Theme.of(context).iconTheme.color?.withAlpha((255 * 0.6).round()),
+                    ),
+                  )
+                      : SizedBox.shrink(),
+                ],
+              ),
             ],
           ),
 
@@ -232,7 +251,7 @@ class SurveyContent extends StatelessWidget {
                 /// Show formbricks logo/copyright [powered by Formbricks] unless hidden
                 survey.styling?.isLogoHidden == true
                     ? SizedBox.shrink()
-                    : SurveyCopyright(),
+                    : SurveyCopyright(isBrandingEnabled: survey.inAppSurveyBranding ?? true),
 
                 /// Show progress bar (except on welcome or if disabled)
                 (currentStep == -1 && survey.welcomeCard?['enabled'] == true) ||

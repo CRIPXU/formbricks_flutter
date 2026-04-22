@@ -86,8 +86,10 @@ class SurveyManager {
     if (jsonString != null && jsonString.isNotEmpty) {
       try {
         _environmentDataHolder = EnvironmentDataHolder.fromJson(jsonDecode(jsonString));
-      } catch (_) {
-        Log.instance.e('Failed to load environment data from local storage');
+      } catch (e) {
+        Log.instance.e('Failed to load environment data from local storage: $e');
+        // Clear corrupted storage to force a fresh fetch next time
+        await prefs.remove(_prefFormbricksDataHolder);
       }
     }
   }
@@ -134,7 +136,14 @@ class SurveyManager {
     }
 
     try {
+      Log.instance.d("Refreshing environment from: ${client.appUrl}");
       final newHolder = await client.getEnvironmentData();
+      if (newHolder == null) {
+        Log.instance.e("Received NULL environment data from server");
+      } else {
+        Log.instance.d("Environment data received. Surveys: ${newHolder.data?.data.surveys?.length ?? 0}");
+        Log.instance.d("Action Classes: ${newHolder.data?.data.actionClasses?.length ?? 0}");
+      }
       environmentData = newHolder;
       final expiresAt = DateTime.tryParse(newHolder?.data?.expiresAt ?? '');
       _startRefreshTimer(expiresAt);
@@ -142,7 +151,7 @@ class SurveyManager {
       hasApiError = false;
     } catch (e, st) {
       Log.instance.e("Error refreshing environment: $e");
-      debugPrint("Stacktrace: $st");
+      Log.instance.e("Stacktrace: $st");
       hasApiError = true;
       _startErrorTimer();
     }
@@ -151,27 +160,39 @@ class SurveyManager {
   /// Filters surveys based on segment, display rules, and user interaction.
   Future<void> filterSurveys() async {
     final holder = await environmentDataHolder;
-    if (holder == null) return;
+    if (holder == null) {
+      Log.instance.d("DEBUG: filterSurveys - environmentDataHolder is null");
+      return;
+    }
 
     final surveys = holder.data?.data.surveys ?? [];
     final displays = UserManager.instance.displays;
     final responses = UserManager.instance.responses;
     final segments = UserManager.instance.segments;
 
-    Log.instance.d("DEBUG: Encuestas recibidas del servidor: ${surveys.length}");
+    Log.instance.d("DEBUG: filterSurveys - Encuestas recibidas del servidor: ${surveys.length}");
+    for (var s in surveys) {
+      Log.instance.d("  - Encuesta '${s.name}' (ID: ${s.id}, Status: ${s.status}, Triggers: ${s.triggers?.map((t) => t.actionClass?.name).toList()})");
+    }
+
     List<Survey> result = surveys;
+    
+    // Solo filtramos por recontactDays por ahora
     result = _filterSurveysBasedOnRecontactDays(result, holder.data?.data.project.recontactDays?.toInt());
-    Log.instance.d("DEBUG: Encuestas tras recontactDays: ${result.length}");
+    Log.instance.d("DEBUG: filterSurveys - Encuestas tras recontactDays: ${result.length}");
 
     if (UserManager.instance.userId != null && segments.isNotEmpty) {
-      // Comentamos los filtrados para debug
+      Log.instance.d("DEBUG: filterSurveys - Segmentos del usuario: $segments");
       // result = _filterSurveysByDisplayCounts(result, displays);
       // result = _filterSurveysBasedOnSegments(result, segments);
+    } else {
+      Log.instance.d("DEBUG: filterSurveys - No hay userId o segmentos para filtrar");
     }
 
     filteredSurveys
       ..clear()
       ..addAll(result);
+    Log.instance.d("DEBUG: filterSurveys - Total encuestas filtradas: ${filteredSurveys.length}");
   }
 
   /// Triggers a survey based on a tracked action if all filters pass.
@@ -189,21 +210,33 @@ class SurveyManager {
     final actionClasses = holder?.data?.data.actionClasses ?? [];
 
     final actionClass = actionClasses.firstWhereOrNull(
-          (ac) => ac.type == 'code' && ac.key == action,
+          (ac) => ac.key == action || ac.name == action || ac.id == action,
     );
 
     final targetSurvey = filteredSurveys.firstWhereOrNull((survey) {
       return survey.triggers?.any((trigger) {
-        // Comparamos por nombre (insensible a mayúsculas) o por ID si coincide
-        bool nameMatch = trigger.actionClass?.name?.toLowerCase() == actionClass?.name?.toLowerCase();
-        return nameMatch;
+        // First try to match by ActionClass ID if we found one
+        if (actionClass != null && trigger.actionClass?.id == actionClass.id) {
+          return true;
+        }
+        // Fallback to name or key matching (case-insensitive)
+        final triggerName = trigger.actionClass?.name?.toLowerCase();
+        final triggerKey = trigger.actionClass?.key?.toLowerCase();
+        final searchAction = action.toLowerCase();
+        
+        return triggerName == searchAction || 
+               triggerKey == searchAction || 
+               (actionClass != null && (triggerName == actionClass.name?.toLowerCase() || triggerKey == actionClass.key?.toLowerCase()));
       }) ?? false;
     });
 
     if (targetSurvey == null) {
       Log.instance.e("DEBUG: No se encontró encuesta para la acción: $action");
-      Log.instance.e("DEBUG: ActionClass encontrada: ${actionClass?.name} (key: ${actionClass?.key})");
-      Log.instance.e("DEBUG: Encuestas disponibles: ${filteredSurveys.map((s) => s.name).toList()}");
+      Log.instance.e("DEBUG: ActionClass encontrada: ${actionClass?.name} (ID: ${actionClass?.id}, Key: ${actionClass?.key})");
+      Log.instance.e("DEBUG: Acciones en triggers de las encuestas disponibles:");
+      for (var s in filteredSurveys) {
+        Log.instance.d("  - Encuesta '${s.name}': ${s.triggers?.map((t) => t.actionClass?.name).toList()}");
+      }
       Log.instance.e(SDKError.instance.surveyNotFoundError);
       return;
     }

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../../../l10n/app_localizations.dart';
 
-class SurveyCopyright extends StatelessWidget{
-  const SurveyCopyright({super.key});
-
+class SurveyCopyright extends StatelessWidget {
+  final bool isBrandingEnabled;
+  const SurveyCopyright({super.key, this.isBrandingEnabled = true});
 
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
+    if (!isBrandingEnabled) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(top: 5.0, bottom: 10.0),
       child: Text.rich(
@@ -15,8 +16,8 @@ class SurveyCopyright extends StatelessWidget{
           text: AppLocalizations.of(context)!.powered_by,
           style: Theme.of(context).textTheme.bodySmall,
           children: [
-            TextSpan(
-              text: 'Formbricks',
+            const TextSpan(
+              text: ' Formbricks',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ],

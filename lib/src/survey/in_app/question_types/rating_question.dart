@@ -4,6 +4,7 @@ import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 
 import '../../../../formbricks_flutter.dart';
 import '../../../utils/helper.dart';
+import '../../../utils/theme_manager.dart';
 import '../components/custom_heading.dart';
 import '../survey_widget.dart';
 
@@ -67,10 +68,28 @@ class _RatingQuestionState extends State<RatingQuestion> {
     }
 
     Widget buildRatingWidget(FormFieldState<double> field) {
+      final customTheme = theme.extension<MyCustomTheme>();
+      final optionStyling = customTheme?.optionStyling;
+      final isDarkMode = customTheme?.isDarkMode ?? false;
+
+      Color themedColor(Map<String, dynamic>? colorMap, {required Color fallback}) {
+        if (colorMap == null) return fallback;
+        final hex = isDarkMode && colorMap.containsKey('dark') ? colorMap['dark'] : colorMap['light'];
+        if (hex == null || hex.isEmpty) return fallback;
+        String h = hex.replaceFirst('#', '');
+        if (h.length == 6) h = 'FF$h';
+        return Color(int.tryParse('0x$h') ?? fallback.toARGB32());
+      }
+
       if (scale == 'number') {
+        final optBgColor = themedColor(optionStyling?.backgroundColor, fallback: Colors.white);
+        final optLabelColor = themedColor(optionStyling?.labelColor, fallback: theme.primaryColor);
+        final optBorderColor = themedColor(optionStyling?.borderColor, fallback: theme.primaryColor);
+        final optRadius = (optionStyling?.borderRadius ?? customTheme?.styleRoundness ?? 8.0).toDouble();
+
         return Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: (optionStyling?.paddingX ?? 8).toDouble(),
+          runSpacing: (optionStyling?.paddingY ?? 8).toDouble(),
           children: List.generate(range, (index) {
             final value = index + 1;
             final isSelected = selectedRating == value.toDouble();
@@ -95,15 +114,16 @@ class _RatingQuestionState extends State<RatingQuestion> {
                 height: 40,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: theme.primaryColor),
-                  color: isSelected ? theme.primaryColor : Colors.white,
+                  borderRadius: BorderRadius.circular(optRadius),
+                  border: Border.all(color: isSelected ? theme.primaryColor : optBorderColor),
+                  color: isSelected ? theme.primaryColor : optBgColor,
                 ),
                 child: Text(
                   value.toString(),
                   style: TextStyle(
-                    color: isSelected ? Colors.white : theme.primaryColor,
+                    color: isSelected ? Colors.white : optLabelColor,
                     fontWeight: FontWeight.bold,
+                    fontSize: (optionStyling?.fontSize ?? 16).toDouble(),
                   ),
                 ),
               ),

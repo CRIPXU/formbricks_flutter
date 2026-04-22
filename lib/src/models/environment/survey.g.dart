@@ -50,6 +50,7 @@ Survey _$SurveyFromJson(Map<String, dynamic> json) => Survey(
   autoClose: (json['autoClose'] as num?)?.toInt(),
   singleUse: json['singleUse'] as Map<String, dynamic>?,
   projectOverwrites: json['projectOverwrites'] as Map<String, dynamic>?,
+  inAppSurveyBranding: json['inAppSurveyBranding'] as bool?,
 );
 
 Map<String, dynamic> _$SurveyToJson(Survey instance) => <String, dynamic>{
@@ -80,6 +81,7 @@ Map<String, dynamic> _$SurveyToJson(Survey instance) => <String, dynamic>{
   'autoClose': instance.autoClose,
   'singleUse': instance.singleUse,
   'projectOverwrites': instance.projectOverwrites,
+  'inAppSurveyBranding': instance.inAppSurveyBranding,
 };
 
 SurveyLanguage _$SurveyLanguageFromJson(Map<String, dynamic> json) =>

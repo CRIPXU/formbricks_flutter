@@ -22,6 +22,16 @@ ThemeData buildTheme(BuildContext context, ThemeData? customTheme, Survey survey
     return Color(int.tryParse('0x$hex') ?? fallback.toARGB32());
   }
 
+  double toDoubleSafe(dynamic value, {double fallback = 0.0}) {
+    if (value == null) return fallback;
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      if (value == 'auto') return fallback;
+      return double.tryParse(value) ?? fallback;
+    }
+    return fallback;
+  }
+
   Color themedColor(Map<String, dynamic>? colorMap, {required Color fallback}) {
     if (colorMap == null) return fallback;
     return parseColor(
@@ -32,33 +42,33 @@ ThemeData buildTheme(BuildContext context, ThemeData? customTheme, Survey survey
 
   // --- 1. Card & Global ---
   final cardStyling = formBricksStyling.card;
-  final globalRoundness = cardStyling?.roundness ?? formBricksStyling.roundness ?? 8.0;
+  final globalRoundness = toDoubleSafe(cardStyling?.roundness ?? formBricksStyling.roundness, fallback: 8.0);
   final cardBgColor = themedColor(cardStyling?.backgroundColor ?? formBricksStyling.cardBackgroundColor, fallback: baseTheme.cardColor);
   final cardBorderColor = themedColor(cardStyling?.borderColor ?? formBricksStyling.cardBorderColor, fallback: Colors.transparent);
   final highlightColor = themedColor(cardStyling?.highlightBorderColor ?? formBricksStyling.highlightBorderColor, fallback: Colors.blueAccent);
 
   // --- 2. Headline ---
   final headlineStyling = formBricksStyling.headline;
-  final headlineColor = themedColor(headlineStyling?.color ?? formBricksStyling.questionColor, fallback: baseTheme.textTheme.headlineMedium?.color ?? Colors.black);
-  final descColor = themedColor(headlineStyling?.descriptionColor, fallback: (baseTheme.textTheme.bodyMedium?.color ?? Colors.black).withOpacity(0.7));
+  final headlineColor = themedColor(headlineStyling?.color ?? formBricksStyling.elementHeadlineColor, fallback: baseTheme.textTheme.headlineMedium?.color ?? Colors.black);
+  final descColor = themedColor(headlineStyling?.descriptionColor ?? formBricksStyling.elementDescriptionColor, fallback: (baseTheme.textTheme.bodyMedium?.color ?? Colors.black).withOpacity(0.7));
 
   // --- 3. Buttons ---
   final buttonStyling = formBricksStyling.button;
-  final btnBgColor = themedColor(buttonStyling?.backgroundColor ?? formBricksStyling.brandColor, fallback: baseTheme.primaryColor);
-  final btnTextColor = themedColor(buttonStyling?.textColor, fallback: Colors.white);
-  final btnRadius = (buttonStyling?.borderRadius ?? globalRoundness).toDouble();
+  final btnBgColor = themedColor(buttonStyling?.backgroundColor ?? formBricksStyling.buttonBgColor, fallback: baseTheme.primaryColor);
+  final btnTextColor = themedColor(buttonStyling?.textColor ?? formBricksStyling.buttonTextColor, fallback: Colors.white);
+  final btnRadius = toDoubleSafe(buttonStyling?.borderRadius ?? formBricksStyling.buttonBorderRadius, fallback: globalRoundness);
 
   // --- 4. Inputs ---
   final inputStyling = formBricksStyling.input;
   final inputBgColor = themedColor(inputStyling?.backgroundColor ?? formBricksStyling.inputColor, fallback: baseTheme.inputDecorationTheme.fillColor ?? Colors.grey[100]!);
   final inputBorderColor = themedColor(inputStyling?.borderColor ?? formBricksStyling.inputBorderColor, fallback: Colors.grey);
-  final inputTextColor = themedColor(inputStyling?.textColor, fallback: baseTheme.textTheme.bodyMedium?.color ?? Colors.black);
-  final inputRadius = (inputStyling?.borderRadius ?? globalRoundness).toDouble();
+  final inputTextColor = themedColor(inputStyling?.textColor ?? formBricksStyling.inputTextColor, fallback: baseTheme.textTheme.bodyMedium?.color ?? Colors.black);
+  final inputRadius = toDoubleSafe(inputStyling?.borderRadius ?? formBricksStyling.inputBorderRadius, fallback: globalRoundness);
 
   // --- 5. Progress ---
   final progressStyling = formBricksStyling.progress;
-  final progressTrackColor = themedColor(progressStyling?.trackBackgroundColor, fallback: Colors.grey[300]!);
-  final progressIndicatorColor = themedColor(progressStyling?.indicatorBackgroundColor ?? formBricksStyling.brandColor, fallback: btnBgColor);
+  final progressTrackColor = themedColor(progressStyling?.trackBackgroundColor ?? formBricksStyling.progressTrackBgColor, fallback: Colors.grey[300]!);
+  final progressIndicatorColor = themedColor(progressStyling?.indicatorBackgroundColor ?? formBricksStyling.progressIndicatorBgColor ?? formBricksStyling.brandColor, fallback: btnBgColor);
 
   return baseTheme.copyWith(
     primaryColor: btnBgColor,
@@ -78,18 +88,18 @@ ThemeData buildTheme(BuildContext context, ThemeData? customTheme, Survey survey
       style: ElevatedButton.styleFrom(
         backgroundColor: btnBgColor,
         foregroundColor: btnTextColor,
-        minimumSize: Size(0, (buttonStyling?.height ?? 40).toDouble()),
+        minimumSize: Size(0, toDoubleSafe(buttonStyling?.height ?? formBricksStyling.buttonHeight, fallback: 40.0)),
         textStyle: TextStyle(
-          fontSize: (buttonStyling?.fontSize ?? 16).toDouble(),
-          fontWeight: buttonStyling?.fontWeight == 'bold' ? FontWeight.bold : FontWeight.normal,
+          fontSize: toDoubleSafe(buttonStyling?.fontSize ?? formBricksStyling.buttonFontSize, fallback: 16.0),
+          fontWeight: (buttonStyling?.fontWeight ?? formBricksStyling.buttonFontWeight) == 'bold' ? FontWeight.bold : FontWeight.normal,
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(btnRadius),
         ),
         elevation: 0,
         padding: EdgeInsets.symmetric(
-          horizontal: (buttonStyling?.paddingX ?? 24).toDouble(),
-          vertical: (buttonStyling?.paddingY ?? 12).toDouble(),
+          horizontal: toDoubleSafe(buttonStyling?.paddingX ?? formBricksStyling.buttonPaddingX, fallback: 24.0),
+          vertical: toDoubleSafe(buttonStyling?.paddingY ?? formBricksStyling.buttonPaddingY, fallback: 12.0),
         ),
       ),
     ),
@@ -97,7 +107,7 @@ ThemeData buildTheme(BuildContext context, ThemeData? customTheme, Survey survey
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: inputBgColor,
-      labelStyle: TextStyle(color: inputTextColor, fontSize: (inputStyling?.fontSize ?? 14).toDouble()),
+      labelStyle: TextStyle(color: inputTextColor, fontSize: toDoubleSafe(inputStyling?.fontSize ?? formBricksStyling.inputFontSize, fallback: 14.0)),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(inputRadius),
         borderSide: BorderSide(color: inputBorderColor),
@@ -115,12 +125,12 @@ ThemeData buildTheme(BuildContext context, ThemeData? customTheme, Survey survey
     textTheme: baseTheme.textTheme.copyWith(
       headlineMedium: baseTheme.textTheme.headlineMedium?.copyWith(
         color: headlineColor,
-        fontSize: (headlineStyling?.fontSize ?? 18).toDouble(),
-        fontWeight: headlineStyling?.fontWeight == 'bold' ? FontWeight.bold : FontWeight.normal,
+        fontSize: toDoubleSafe(headlineStyling?.fontSize ?? formBricksStyling.elementHeadlineFontSize, fallback: 18.0),
+        fontWeight: (headlineStyling?.fontWeight ?? formBricksStyling.elementHeadlineFontWeight) == 'bold' ? FontWeight.bold : FontWeight.normal,
       ),
       bodyMedium: baseTheme.textTheme.bodyMedium?.copyWith(
         color: descColor,
-        fontSize: (headlineStyling?.descriptionFontSize ?? 14).toDouble(),
+        fontSize: toDoubleSafe(headlineStyling?.descriptionFontSize ?? formBricksStyling.elementDescriptionFontSize, fallback: 14.0),
       ),
     ),
 
@@ -133,6 +143,8 @@ ThemeData buildTheme(BuildContext context, ThemeData? customTheme, Survey survey
       MyCustomTheme(
         styleRoundness: globalRoundness,
         optionStyling: formBricksStyling.option,
+        headlineStyling: headlineStyling,
+        inputStyling: inputStyling,
         progressStyling: progressStyling,
         cardStyling: cardStyling,
         isDarkMode: isDarkMode,
@@ -145,6 +157,8 @@ ThemeData buildTheme(BuildContext context, ThemeData? customTheme, Survey survey
 class MyCustomTheme extends ThemeExtension<MyCustomTheme> {
   final double? styleRoundness;
   final OptionStyling? optionStyling;
+  final HeadlineStyling? headlineStyling;
+  final InputStyling? inputStyling;
   final ProgressStyling? progressStyling;
   final CardStyling? cardStyling;
   final bool isDarkMode;
@@ -152,6 +166,8 @@ class MyCustomTheme extends ThemeExtension<MyCustomTheme> {
   const MyCustomTheme({
     this.styleRoundness,
     this.optionStyling,
+    this.headlineStyling,
+    this.inputStyling,
     this.progressStyling,
     this.cardStyling,
     this.isDarkMode = false,
@@ -161,6 +177,8 @@ class MyCustomTheme extends ThemeExtension<MyCustomTheme> {
   MyCustomTheme copyWith({
     double? styleRoundness,
     OptionStyling? optionStyling,
+    HeadlineStyling? headlineStyling,
+    InputStyling? inputStyling,
     ProgressStyling? progressStyling,
     CardStyling? cardStyling,
     bool? isDarkMode,
@@ -168,6 +186,8 @@ class MyCustomTheme extends ThemeExtension<MyCustomTheme> {
     return MyCustomTheme(
       styleRoundness: styleRoundness ?? this.styleRoundness,
       optionStyling: optionStyling ?? this.optionStyling,
+      headlineStyling: headlineStyling ?? this.headlineStyling,
+      inputStyling: inputStyling ?? this.inputStyling,
       progressStyling: progressStyling ?? this.progressStyling,
       cardStyling: cardStyling ?? this.cardStyling,
       isDarkMode: isDarkMode ?? this.isDarkMode,
@@ -180,6 +200,8 @@ class MyCustomTheme extends ThemeExtension<MyCustomTheme> {
     return MyCustomTheme(
       styleRoundness: lerpDouble(styleRoundness, other.styleRoundness, t),
       optionStyling: other.optionStyling,
+      headlineStyling: other.headlineStyling,
+      inputStyling: other.inputStyling,
       progressStyling: other.progressStyling,
       cardStyling: other.cardStyling,
       isDarkMode: other.isDarkMode,

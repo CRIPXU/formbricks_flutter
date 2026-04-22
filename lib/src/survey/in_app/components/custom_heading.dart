@@ -63,23 +63,38 @@ class CustomHeading extends StatelessWidget {
             Expanded(
               child: Text(
                 stripHtml(translate(question.headline, context)),
-                style:
-                    theme.textTheme.headlineMedium ??
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: theme.textTheme.headlineMedium,
               ),
             ),
-            required
-                ? const SizedBox.shrink()
-                : Text(
+            if (!required)
+              Builder(
+                builder: (context) {
+                  final customTheme = theme.extension<MyCustomTheme>();
+                  final headlineStyling = customTheme?.headlineStyling;
+                  final isDarkMode = customTheme?.isDarkMode ?? false;
+                  
+                  Color themedColor(Map<String, dynamic>? colorMap, {required Color fallback}) {
+                    if (colorMap == null) return fallback;
+                    final hex = isDarkMode && colorMap.containsKey('dark') ? colorMap['dark'] : colorMap['light'];
+                    if (hex == null || hex.isEmpty) return fallback;
+                    String h = hex.replaceFirst('#', '');
+                    if (h.length == 6) h = 'FF$h';
+                    return Color(int.tryParse('0x$h') ?? fallback.toARGB32());
+                  }
+
+                  final upperLabelColor = themedColor(headlineStyling?.upperLabelColor, fallback: theme.textTheme.titleMedium?.color ?? Colors.grey);
+
+                  return Text(
                     AppLocalizations.of(context)!.optional,
                     textAlign: TextAlign.end,
-                    style:
-                        theme.textTheme.titleMedium ??
-                        const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w300,
-                        ),
-                  ),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: upperLabelColor,
+                      fontSize: (headlineStyling?.upperLabelFontSize ?? 12).toDouble(),
+                      fontWeight: headlineStyling?.upperLabelFontWeight == 'bold' ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  );
+                }
+              ),
           ],
         ),
         if (translate(question.subheader, context)?.isNotEmpty ?? false)

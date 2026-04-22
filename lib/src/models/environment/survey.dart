@@ -38,6 +38,7 @@ class Survey {
   final int? autoClose;
   final Map<String, dynamic>? singleUse;
   final Map<String, dynamic>? projectOverwrites;
+  final bool? inAppSurveyBranding;
 
   Survey({
       required this.id,
@@ -66,7 +67,8 @@ class Survey {
     this.hiddenFields,
     this.autoClose,
     this.singleUse,
-    this.projectOverwrites
+    this.projectOverwrites,
+    this.inAppSurveyBranding,
   });
 
   factory Survey.fromJson(Map<String, dynamic> json) => _$SurveyFromJson(json);

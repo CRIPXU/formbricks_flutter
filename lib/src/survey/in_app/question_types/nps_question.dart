@@ -65,16 +65,34 @@ class _NPSQuestionState extends State<NPSQuestion> {
                 children: List.generate(11, (index) {
                   final isSelected = selectedIndex == index;
 
+                  final customTheme = theme.extension<MyCustomTheme>();
+                  final optionStyling = customTheme?.optionStyling;
+                  final isDarkMode = customTheme?.isDarkMode ?? false;
+
+                  Color themedColor(Map<String, dynamic>? colorMap, {required Color fallback}) {
+                    if (colorMap == null) return fallback;
+                    final hex = isDarkMode && colorMap.containsKey('dark') ? colorMap['dark'] : colorMap['light'];
+                    if (hex == null || hex.isEmpty) return fallback;
+                    String h = hex.replaceFirst('#', '');
+                    if (h.length == 6) h = 'FF$h';
+                    return Color(int.tryParse('0x$h') ?? fallback.toARGB32());
+                  }
+
+                  final optBgColor = themedColor(optionStyling?.backgroundColor, fallback: Colors.transparent);
+                  final optLabelColor = themedColor(optionStyling?.labelColor, fallback: theme.textTheme.bodyMedium?.color ?? Colors.black);
+                  final optBorderColor = themedColor(optionStyling?.borderColor, fallback: theme.primaryColor);
+                  final optRadius = (optionStyling?.borderRadius ?? customTheme?.styleRoundness ?? 8.0).toDouble();
+
                   BorderRadius borderRadius = BorderRadius.zero;
                   if (index == 0) {
                     borderRadius = BorderRadius.only(
-                      topLeft: Radius.circular(theme.extension<MyCustomTheme>()?.styleRoundness ?? 8.0),
-                      bottomLeft: Radius.circular(theme.extension<MyCustomTheme>()?.styleRoundness ?? 8.0),
+                      topLeft: Radius.circular(optRadius),
+                      bottomLeft: Radius.circular(optRadius),
                     );
                   } else if (index == 10) {
                     borderRadius = BorderRadius.only(
-                      topRight: Radius.circular(theme.extension<MyCustomTheme>()?.styleRoundness ?? 8.0),
-                      bottomRight: Radius.circular(theme.extension<MyCustomTheme>()?.styleRoundness ?? 8.0),
+                      topRight: Radius.circular(optRadius),
+                      bottomRight: Radius.circular(optRadius),
                     );
                   }
 
@@ -97,9 +115,9 @@ class _NPSQuestionState extends State<NPSQuestion> {
                       height: 36,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: isSelected ? theme.primaryColor : Colors.transparent,
+                        color: isSelected ? theme.primaryColor : optBgColor,
                         border: Border.all(
-                          color: theme.primaryColor,
+                          color: isSelected ? theme.primaryColor : optBorderColor,
                           width: 1,
                         ),
                         borderRadius: borderRadius,
@@ -107,8 +125,9 @@ class _NPSQuestionState extends State<NPSQuestion> {
                       child: Text(
                         '$index',
                         style: TextStyle(
-                          color: isSelected ? Colors.white : theme.textTheme.bodyMedium?.color,
+                          color: isSelected ? Colors.white : optLabelColor,
                           fontWeight: FontWeight.w500,
+                          fontSize: (optionStyling?.fontSize ?? 14).toDouble(),
                         ),
                       ),
                     ),

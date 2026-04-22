@@ -58,13 +58,13 @@ const _$LogicActionOperatorEnumMap = {
 
 Condition _$ConditionFromJson(Map<String, dynamic> json) => Condition(
   id: json['id'] as String,
-  connector: $enumDecode(_$ConditionConnectorEnumMap, json['operator']),
+  connector: $enumDecodeNullable(_$ConditionConnectorEnumMap, json['operator']),
   conditions: json['conditions'] as List<dynamic>,
 );
 
 Map<String, dynamic> _$ConditionToJson(Condition instance) => <String, dynamic>{
   'id': instance.id,
-  'operator': _$ConditionConnectorEnumMap[instance.connector]!,
+  'operator': _$ConditionConnectorEnumMap[instance.connector],
   'conditions': instance.conditions,
 };
 
@@ -73,22 +73,21 @@ const _$ConditionConnectorEnumMap = {
   ConditionConnector.or: 'or',
 };
 
-ConditionDetail _$ConditionDetailFromJson(Map<String, dynamic> json) =>
-    ConditionDetail(
-      id: json['id'] as String,
-      operator: $enumDecode(_$ConditionOperatorEnumMap, json['operator']),
-      leftOperand: Operand.fromJson(
-        json['leftOperand'] as Map<String, dynamic>,
-      ),
-      rightOperand: json['rightOperand'] == null
-          ? null
-          : Operand.fromJson(json['rightOperand'] as Map<String, dynamic>),
-    );
+ConditionDetail _$ConditionDetailFromJson(
+  Map<String, dynamic> json,
+) => ConditionDetail(
+  id: json['id'] as String,
+  operator: $enumDecodeNullable(_$ConditionOperatorEnumMap, json['operator']),
+  leftOperand: Operand.fromJson(json['leftOperand'] as Map<String, dynamic>),
+  rightOperand: json['rightOperand'] == null
+      ? null
+      : Operand.fromJson(json['rightOperand'] as Map<String, dynamic>),
+);
 
 Map<String, dynamic> _$ConditionDetailToJson(ConditionDetail instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'operator': _$ConditionOperatorEnumMap[instance.operator]!,
+      'operator': _$ConditionOperatorEnumMap[instance.operator],
       'leftOperand': instance.leftOperand,
       'rightOperand': instance.rightOperand,
     };

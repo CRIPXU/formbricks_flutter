@@ -8,8 +8,16 @@ part of 'action_class_reference.dart';
 
 ActionClassReference _$ActionClassReferenceFromJson(
   Map<String, dynamic> json,
-) => ActionClassReference(name: json['name'] as String?);
+) => ActionClassReference(
+  id: json['id'] as String?,
+  name: json['name'] as String?,
+  key: json['key'] as String?,
+);
 
 Map<String, dynamic> _$ActionClassReferenceToJson(
   ActionClassReference instance,
-) => <String, dynamic>{'name': instance.name};
+) => <String, dynamic>{
+  'id': instance.id,
+  'name': instance.name,
+  'key': instance.key,
+};

@@ -57,6 +57,24 @@ class _MultipleChoiceMultiQuestionState extends State<MultipleChoiceMultiQuestio
 
               if (optionId == null) return const SizedBox.shrink();
 
+              final customTheme = theme.extension<MyCustomTheme>();
+              final optionStyling = customTheme?.optionStyling;
+              final isDarkMode = customTheme?.isDarkMode ?? false;
+
+              Color themedColor(Map<String, dynamic>? colorMap, {required Color fallback}) {
+                if (colorMap == null) return fallback;
+                final hex = isDarkMode && colorMap.containsKey('dark') ? colorMap['dark'] : colorMap['light'];
+                if (hex == null || hex.isEmpty) return fallback;
+                String h = hex.replaceFirst('#', '');
+                if (h.length == 6) h = 'FF$h';
+                return Color(int.tryParse('0x$h') ?? fallback.toARGB32());
+              }
+
+              final optBgColor = themedColor(optionStyling?.backgroundColor, fallback: theme.inputDecorationTheme.fillColor ?? Colors.grey[100]!);
+              final optLabelColor = themedColor(optionStyling?.labelColor, fallback: theme.textTheme.bodyMedium?.color ?? Colors.black);
+              final optBorderColor = themedColor(optionStyling?.borderColor, fallback: theme.inputDecorationTheme.enabledBorder?.borderSide.color ?? Colors.grey);
+              final optRadius = (optionStyling?.borderRadius ?? customTheme?.styleRoundness ?? 8.0).toDouble();
+
               return GestureDetector(
                 onTap: () {
                   setState(() {
@@ -71,16 +89,17 @@ class _MultipleChoiceMultiQuestionState extends State<MultipleChoiceMultiQuestio
                 },
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: (optionStyling?.paddingX ?? 12).toDouble(),
+                    vertical: (optionStyling?.paddingY ?? 14).toDouble(),
+                  ),
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: isSelected
-                          ? theme.primaryColor
-                          : theme.inputDecorationTheme.enabledBorder != null ? theme.inputDecorationTheme.enabledBorder!.borderSide.color : theme.unselectedWidgetColor,
+                      color: isSelected ? theme.primaryColor : optBorderColor,
                       width: 2,
                     ),
-                    borderRadius: BorderRadius.circular(theme.extension<MyCustomTheme>()?.styleRoundness ?? 8.0),
-                    color: theme.inputDecorationTheme.fillColor,
+                    borderRadius: BorderRadius.circular(optRadius),
+                    color: isSelected ? theme.primaryColor.withOpacity(0.1) : optBgColor,
                   ),
                   child: Row(
                     children: [
@@ -96,7 +115,10 @@ class _MultipleChoiceMultiQuestionState extends State<MultipleChoiceMultiQuestio
                       Expanded(
                         child: Text(
                           label,
-                          style: theme.textTheme.bodyMedium
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: isSelected ? theme.primaryColor : optLabelColor,
+                            fontSize: (optionStyling?.fontSize ?? 16).toDouble(),
+                          ),
                         ),
                       ),
                     ],
