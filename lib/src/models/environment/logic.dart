@@ -43,7 +43,7 @@ class LogicAction {
 @JsonSerializable()
 class Condition {
   final String id;
-  @JsonKey(name: 'connector')
+  @JsonKey(name: 'operator')
   final ConditionConnector connector;
   final List<dynamic> conditions; // Can be ConditionDetail or nested Condition
 

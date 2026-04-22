@@ -71,7 +71,10 @@ class SurveyWidget extends StatefulWidget {
 
 class SurveyWidgetState extends State<SurveyWidget> {
   /// Tracks current position in the survey.
-  int _currentStep = -1;
+  int _currentStep = -1; // Used for old question-based surveys
+  int _currentBlockIndex = 0;
+  int _currentElementIndex = 0;
+  bool _useBlocks = false;
   int _currentEndingStep = 0;
 
   /// Tracks if user has interacted with the survey
@@ -107,9 +110,15 @@ class SurveyWidgetState extends State<SurveyWidget> {
   void initState() {
     _inactivitySecondsRemaining = widget.survey.autoClose ?? 10;
     hasUserInteracted = false;
+    _useBlocks = widget.survey.blocks != null && widget.survey.blocks!.isNotEmpty;
     /// Skip welcome screen if disabled
     if (widget.survey.welcomeCard?['enabled'] == false) {
-      _currentStep++;
+      if (_useBlocks) {
+        _currentBlockIndex = 0;
+        _currentElementIndex = 0;
+      } else {
+        _currentStep++;
+      }
     }
     super.initState();
     _fetchSurvey();
@@ -158,6 +167,7 @@ class SurveyWidgetState extends State<SurveyWidget> {
     try {
       setState(() {
         survey = widget.survey;
+        _useBlocks = survey.blocks != null && survey.blocks!.isNotEmpty;
         isLoading = false;
       });
     } catch (e) {
@@ -165,6 +175,39 @@ class SurveyWidgetState extends State<SurveyWidget> {
         error = e.toString();
         isLoading = false;
       });
+    }
+  }
+
+  /// Helper to get the current question being displayed
+  Question? get _currentQuestion {
+    if (_useBlocks) {
+      if (_currentBlockIndex >= 0 && _currentBlockIndex < (survey.blocks?.length ?? 0)) {
+        final block = survey.blocks![_currentBlockIndex];
+        if (_currentElementIndex >= 0 && _currentElementIndex < block.questions.length) {
+          return block.questions[_currentElementIndex];
+        }
+      }
+      return null;
+    } else {
+      return survey.questions?.elementAtOrNull(_currentStep);
+    }
+  }
+
+  /// Helper to check if we are at the ending screen
+  bool get _isAtEnding {
+    if (_useBlocks) {
+      return _currentBlockIndex >= (survey.blocks?.length ?? 0);
+    } else {
+      return _currentStep >= (survey.questions?.length ?? 0);
+    }
+  }
+
+  /// Helper to get all questions for total step calculation
+  List<Question> get _allQuestions {
+    if (_useBlocks) {
+      return survey.blocks!.expand((b) => b.questions).toList();
+    } else {
+      return survey.questions ?? [];
     }
   }
 
@@ -261,23 +304,33 @@ class SurveyWidgetState extends State<SurveyWidget> {
 
 
   /// Advances to the next question, applying logic if needed
-  /// assumptions [there would only be one jump action in a list of actions]
-  /// jump action is the only action that takes you to another question and alters the user experience
-  /// require answer and calculate basically happens behind the scene
   void nextStep() {
     hasUserInteracted = true;
     final form = formKey.currentState;
     form?.validate();
 
     /// Show questions if welcome card is enabled
-    if (_currentStep == -1 && survey.welcomeCard?['enabled'] == true) {
+    bool isAtWelcome = _useBlocks ? (_currentBlockIndex == 0 && _currentElementIndex == 0 && widget.survey.welcomeCard?['enabled'] == true && !hasUserInteracted) : (_currentStep == -1 && survey.welcomeCard?['enabled'] == true);
+    
+    // In fact, the previous logic used _currentStep == -1 for welcome. 
+    // Let's stick to that or similar.
+    if (_useBlocks && _currentBlockIndex == 0 && _currentElementIndex == 0 && widget.survey.welcomeCard?['enabled'] == true && responses.isEmpty && _currentStep == -1) {
+       setState(() {
+         _currentStep = 0;
+         _currentBlockIndex = 0;
+         _currentElementIndex = 0;
+       });
+       return;
+    }
+
+    if (!_useBlocks && _currentStep == -1 && survey.welcomeCard?['enabled'] == true) {
       setState(() => _currentStep++);
       return;
     }
 
-    final currentQuestion = survey.questions.elementAtOrNull(_currentStep);
+    final currentQuestion = _currentQuestion;
     if (currentQuestion == null) {
-      if (_currentStep >= survey.questions.length) {
+      if (_isAtEnding) {
         _showEnding();
         _submitSurvey();
       }
@@ -286,53 +339,77 @@ class SurveyWidgetState extends State<SurveyWidget> {
 
     _trackVisit(currentQuestion.id);
 
-    /// Evaluate logic, if defined
-    if (currentQuestion.logic != null && currentQuestion.logic!.isNotEmpty) {
+    /// Evaluate logic for old structure (Question-level logic)
+    if (!_useBlocks && currentQuestion.logic != null && currentQuestion.logic!.isNotEmpty) {
       bool anyLogicMatched = false;
       String? jumpTarget;
 
       for (final logic in currentQuestion.logic!) {
         if (_evaluateConditions(logic.conditions)) {
           anyLogicMatched = true;
-
           for (final action in logic.actions) {
             if (action.objective == LogicActionObjective.jumpToQuestion) {
-              jumpTarget = action.target; // Handle jump later
+              jumpTarget = action.target;
             } else {
-              _executeAction(action); // e.g., requireAnswer, calculate
+              _executeAction(action);
             }
           }
         }
       }
 
-      /// Jump action takes precedence if matched
       if (jumpTarget != null) {
         _jumpToQuestion(jumpTarget);
         return;
       }
 
       if (anyLogicMatched) {
-        /// If answer is required but missing, block next step
-        if (_requiredAnswers[currentQuestion.id] == true &&
-            !responses.containsKey(currentQuestion.id)) {
+        if (_requiredAnswers[currentQuestion.id] == true && !responses.containsKey(currentQuestion.id)) {
           form?.validate();
           return;
         }
-
         _advanceToNextOrEnd();
         return;
       }
 
-      /// No logic matched, fallback
       if (currentQuestion.logicFallback != null) {
         _jumpToQuestion(currentQuestion.logicFallback!);
         return;
       }
     }
 
-    /// No logic to evaluate
-    if (_requiredAnswers[currentQuestion.id] == true &&
-        !responses.containsKey(currentQuestion.id)) {
+    /// Block-level logic (New structure)
+    if (_useBlocks) {
+      final currentBlock = survey.blocks![_currentBlockIndex];
+      
+      // If we are at the last element of the block, evaluate block logic
+      if (_currentElementIndex == currentBlock.questions.length - 1) {
+        if (currentBlock.logic != null && currentBlock.logic!.isNotEmpty) {
+           String? jumpTarget;
+           for (final logic in currentBlock.logic!) {
+             if (_evaluateConditions(logic.conditions)) {
+               for (final action in logic.actions) {
+                 if (action.objective == LogicActionObjective.jumpToBlock) {
+                   jumpTarget = action.target;
+                 } else if (action.objective == LogicActionObjective.jumpToQuestion) {
+                   // Some blocks might jump to specific questions?
+                   _jumpToQuestion(action.target!);
+                   return;
+                 } else {
+                   _executeAction(action);
+                 }
+               }
+             }
+           }
+           if (jumpTarget != null) {
+             _jumpToBlock(jumpTarget);
+             return;
+           }
+        }
+      }
+    }
+
+    /// Default advancement
+    if (_requiredAnswers[currentQuestion.id] == true && !responses.containsKey(currentQuestion.id)) {
       form?.validate();
       return;
     }
@@ -340,17 +417,43 @@ class SurveyWidgetState extends State<SurveyWidget> {
     _advanceToNextOrEnd();
   }
 
-/// Moves to the next step or finishes the survey
+  /// Moves to the next step or finishes the survey
   void _advanceToNextOrEnd() {
-    if ((formKey.currentState?.validate() ?? false) &&
-        _currentStep < survey.questions.length) {
-      setState(() => _currentStep++);
-    }
+    if (!(formKey.currentState?.validate() ?? false)) return;
 
-    if (_currentStep >= survey.questions.length) {
+    setState(() {
+      if (_useBlocks) {
+        final currentBlock = survey.blocks![_currentBlockIndex];
+        if (_currentElementIndex < currentBlock.questions.length - 1) {
+          _currentElementIndex++;
+        } else {
+          _currentBlockIndex++;
+          _currentElementIndex = 0;
+        }
+      } else {
+        _currentStep++;
+      }
+    });
+
+    if (_isAtEnding) {
       _showEnding();
       _submitSurvey();
     }
+  }
+
+  /// Moves to a specific block by ID
+  void _jumpToBlock(String targetId) {
+    final index = survey.blocks?.indexWhere((b) => b.id == targetId) ?? -1;
+    setState(() {
+      if (index != -1) {
+        _currentBlockIndex = index;
+        _currentElementIndex = 0;
+        _trackVisit(survey.blocks![index].questions.first.id);
+      } else {
+        _showEnding();
+        _submitSurvey();
+      }
+    });
   }
 
   /// Record the question ID if it hasn't already been recorded as the last entry in the list.
@@ -445,7 +548,9 @@ class SurveyWidgetState extends State<SurveyWidget> {
   /// Resolves operand values from responses or variables
   dynamic _getOperandValue(Operand operand) {
     switch (operand.type) {
-      case OperandType.question: return responses[operand.value] ?? '';
+      case OperandType.question:
+      case OperandType.element:
+        return responses[operand.value] ?? '';
       case OperandType.static: return operand.value;
       case OperandType.variable: return _variables[operand.value] ?? 0;
       }
@@ -483,6 +588,11 @@ class SurveyWidgetState extends State<SurveyWidget> {
           return responses.containsKey(left);
         } else if (left is Map && left['value'] is String) {
           return responses.containsKey(left['value']);
+        }
+        return false;
+      case ConditionOperator.isClicked:
+        if (left is String) {
+           return responses[left] == true || responses[left] == 'clicked';
         }
         return false;
       default:
@@ -589,6 +699,8 @@ class SurveyWidgetState extends State<SurveyWidget> {
         client: widget.client,
         userId: widget.userId,
         currentStep: _currentStep,
+        currentBlockIndex: _currentBlockIndex,
+        currentElementIndex: _currentElementIndex,
         isLoading: isLoading,
         formKey: formKey,
         nextStep: nextStep,

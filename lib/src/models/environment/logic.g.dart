@@ -43,6 +43,7 @@ Map<String, dynamic> _$LogicActionToJson(LogicAction instance) =>
 
 const _$LogicActionObjectiveEnumMap = {
   LogicActionObjective.jumpToQuestion: 'jumpToQuestion',
+  LogicActionObjective.jumpToBlock: 'jumpToBlock',
   LogicActionObjective.requireAnswer: 'requireAnswer',
   LogicActionObjective.calculate: 'calculate',
 };
@@ -57,13 +58,13 @@ const _$LogicActionOperatorEnumMap = {
 
 Condition _$ConditionFromJson(Map<String, dynamic> json) => Condition(
   id: json['id'] as String,
-  connector: $enumDecode(_$ConditionConnectorEnumMap, json['connector']),
+  connector: $enumDecode(_$ConditionConnectorEnumMap, json['operator']),
   conditions: json['conditions'] as List<dynamic>,
 );
 
 Map<String, dynamic> _$ConditionToJson(Condition instance) => <String, dynamic>{
   'id': instance.id,
-  'connector': _$ConditionConnectorEnumMap[instance.connector]!,
+  'operator': _$ConditionConnectorEnumMap[instance.connector]!,
   'conditions': instance.conditions,
 };
 
@@ -107,6 +108,7 @@ const _$ConditionOperatorEnumMap = {
   ConditionOperator.endsWith: 'endsWith',
   ConditionOperator.doesNotEndWith: 'doesNotEndWith',
   ConditionOperator.isSubmitted: 'isSubmitted',
+  ConditionOperator.isClicked: 'isClicked',
   ConditionOperator.noOperator: 'noOperator',
 };
 
@@ -122,6 +124,7 @@ Map<String, dynamic> _$OperandToJson(Operand instance) => <String, dynamic>{
 
 const _$OperandTypeEnumMap = {
   OperandType.question: 'question',
+  OperandType.element: 'element',
   OperandType.static: 'static',
   OperandType.variable: 'variable',
 };

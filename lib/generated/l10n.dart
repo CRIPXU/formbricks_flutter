@@ -28,9 +28,10 @@ class S {
   static const AppLocalizationDelegate delegate = AppLocalizationDelegate();
 
   static Future<S> load(Locale locale) {
-    final name = (locale.countryCode?.isEmpty ?? false)
-        ? locale.languageCode
-        : locale.toString();
+    final name =
+        (locale.countryCode?.isEmpty ?? false)
+            ? locale.languageCode
+            : locale.toString();
     final localeName = Intl.canonicalizedLocale(name);
     return initializeMessages(localeName).then((_) {
       Intl.defaultLocale = localeName;
@@ -59,16 +60,7 @@ class AppLocalizationDelegate extends LocalizationsDelegate<S> {
   const AppLocalizationDelegate();
 
   List<Locale> get supportedLocales {
-    return const <Locale>[
-      Locale.fromSubtags(languageCode: 'en'),
-      Locale.fromSubtags(languageCode: 'ar'),
-      Locale.fromSubtags(languageCode: 'es'),
-      Locale.fromSubtags(languageCode: 'fr'),
-      Locale.fromSubtags(languageCode: 'ja'),
-      Locale.fromSubtags(languageCode: 'pt'),
-      Locale.fromSubtags(languageCode: 'sw'),
-      Locale.fromSubtags(languageCode: 'zh'),
-    ];
+    return const <Locale>[Locale.fromSubtags(languageCode: 'en')];
   }
 
   @override

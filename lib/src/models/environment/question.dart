@@ -52,8 +52,12 @@ class Question {
   final List<Logic>? logic;
   final String? logicFallback; // Target if logic conditions fail
   final String? buttonUrl;
+  final bool? buttonExternal;
+  final Map<String, String>? ctaButtonLabel;
   final int? range;
   final String? scale;
+  final bool? isColorCodingEnabled;
+  final bool? insightsEnabled;
 
   Question({
     required this.id,
@@ -97,11 +101,15 @@ class Question {
     this.lastName,
     this.maxSizeInMB,
     this.format,
-    required this.logic,
+    this.logic,
     this.logicFallback,
     this.buttonUrl,
+    this.buttonExternal,
+    this.ctaButtonLabel,
     this.range,
-    this.scale
+    this.scale,
+    this.isColorCodingEnabled,
+    this.insightsEnabled,
   });
 
 

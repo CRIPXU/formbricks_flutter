@@ -22,6 +22,8 @@ class SurveyForm extends StatelessWidget {
   /// State and navigation tracking
   final int estimatedTimeInSecs;
   final int currentStep;
+  final int currentBlockIndex;
+  final int currentElementIndex;
   final int currentStepEnding;
   final bool isLoading;
   final String? error;
@@ -73,6 +75,8 @@ class SurveyForm extends StatelessWidget {
     required this.userId,
     this.customTheme,
     required this.currentStep,
+    this.currentBlockIndex = 0,
+    this.currentElementIndex = 0,
     required this.currentStepEnding,
     required this.isLoading,
     this.error,
@@ -117,7 +121,9 @@ class SurveyForm extends StatelessWidget {
 
   /// Builds the main survey content based on the current step.
   Widget _buildSurvey(BuildContext context) {
-    final totalSteps = survey.questions.length;
+    final bool useBlocks = survey.blocks != null && survey.blocks!.isNotEmpty;
+    final allQuestions = useBlocks ? survey.blocks!.expand((b) => b.questions).toList() : (survey.questions ?? []);
+    final totalSteps = allQuestions.length;
 
     Widget content;
     String? nextLabel;
@@ -127,12 +133,83 @@ class SurveyForm extends StatelessWidget {
     /// Case: show welcome card
     if (currentStep == -1 && survey.welcomeCard?['enabled'] == true) {
       content = WelcomeWidget(survey: survey);
-      nextLabel = survey.welcomeCard!['buttonLabel']['default'] ?? 'Next';
+      nextLabel = survey.welcomeCard!['buttonLabel']?['default'] ?? 'Next';
     }
     /// Case: show current question
-    else if (currentStep < survey.questions.length) {
-      question = survey.questions[currentStep];
-      content = Form(
+    else if (!useBlocks && currentStep < (survey.questions?.length ?? 0)) {
+      question = survey.questions![currentStep];
+      content = _buildQuestionWidget(question);
+      nextLabel = question.buttonLabel?['default'];
+      previousLabel = question.backButtonLabel?['default'];
+    }
+    else if (useBlocks && currentBlockIndex < (survey.blocks?.length ?? 0)) {
+      final block = survey.blocks![currentBlockIndex];
+      if (currentElementIndex < block.questions.length) {
+        question = block.questions[currentElementIndex];
+        content = _buildQuestionWidget(question);
+        
+        // Use block label if question label is null
+        nextLabel = question.buttonLabel?['default'] ?? block.buttonLabel?['default'];
+        previousLabel = question.backButtonLabel?['default'] ?? block.backButtonLabel?['default'];
+      } else {
+        content = Container(); // Should not happen
+      }
+    }
+    /// Case: show ending or final screen
+    else {
+      if (survey.endings != null && survey.endings!.isNotEmpty) {
+        final isLastEnding = currentStepEnding == (survey.endings!.length - 1);
+        nextLabel = isLastEnding
+            ? AppLocalizations.of(context)!.close
+            : AppLocalizations.of(context)!.next;
+
+        content = EndWidget(
+          ending: survey.endings![currentStepEnding],
+          showCloseButton: isLastEnding,
+          onComplete: onComplete,
+          nextLabel: nextLabel,
+        );
+      } else {
+        nextLabel = AppLocalizations.of(context)!.close;
+        content = CloseWidget(onComplete: onComplete);
+      }
+    }
+
+    // Calculate progress index
+    int progressIndex = currentStep;
+    if (useBlocks) {
+       progressIndex = 0;
+       for (int i=0; i<currentBlockIndex; i++) {
+         progressIndex += survey.blocks![i].questions.length;
+       }
+       progressIndex += currentElementIndex;
+    }
+
+    /// Final assembled layout
+    return SurveyContent(
+      progress: (progressIndex + 1) / totalSteps,
+      currentStep: currentStep,
+      nextStep: nextStep,
+      previousStep: previousStep,
+      nextLabel: nextLabel,
+      previousLabel: previousLabel,
+      onResponse: onResponse,
+      survey: survey,
+      response: responses[question?.id],
+      contentHeight: MediaQuery.of(context).size.height,
+      spacerHeight: 0,
+      surveyDisplayMode: surveyDisplayMode,
+      estimatedTimeInSecs: estimatedTimeInSecs,
+      onComplete: onComplete,
+      clickOutsideClose: clickOutsideClose,
+      hasUserInteracted: hasUserInteracted,
+      inactivitySecondsRemaining: inactivitySecondsRemaining,
+      child: content,
+    );
+  }
+
+  Widget _buildQuestionWidget(Question question) {
+     return Form(
         key: formKey,
         autovalidateMode: AutovalidateMode.onUserInteraction,
         child: QuestionWidget(
@@ -162,50 +239,5 @@ class SurveyForm extends StatelessWidget {
           ratingQuestionBuilder: ratingQuestionBuilder,
         ),
       );
-
-      nextLabel = question.buttonLabel?['default'];
-      previousLabel = question.backButtonLabel?['default'];
-    }
-    /// Case: show ending or final screen
-    else {
-      if (survey.endings != null && survey.endings!.isNotEmpty) {
-        final isLastEnding = currentStepEnding == (survey.endings!.length - 1);
-        nextLabel = isLastEnding
-            ? AppLocalizations.of(context)!.close
-            : AppLocalizations.of(context)!.next;
-
-        content = EndWidget(
-          ending: survey.endings![currentStepEnding],
-          showCloseButton: isLastEnding,
-          onComplete: onComplete,
-          nextLabel: nextLabel,
-        );
-      } else {
-        nextLabel = AppLocalizations.of(context)!.close;
-        content = CloseWidget(onComplete: onComplete);
-      }
-    }
-
-    /// Final assembled layout
-    return SurveyContent(
-      progress: (currentStep + 1) / totalSteps,
-      currentStep: currentStep,
-      nextStep: nextStep,
-      previousStep: previousStep,
-      nextLabel: nextLabel,
-      previousLabel: previousLabel,
-      onResponse: onResponse,
-      survey: survey,
-      response: responses[question?.id],
-      contentHeight: MediaQuery.of(context).size.height,
-      spacerHeight: 0,
-      surveyDisplayMode: surveyDisplayMode,
-      estimatedTimeInSecs: estimatedTimeInSecs,
-      onComplete: onComplete,
-      clickOutsideClose: clickOutsideClose,
-      hasUserInteracted: hasUserInteracted,
-      inactivitySecondsRemaining: inactivitySecondsRemaining,
-      child: content,
-    );
   }
 }

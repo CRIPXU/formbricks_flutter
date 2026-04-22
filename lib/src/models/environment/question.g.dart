@@ -77,8 +77,14 @@ Question _$QuestionFromJson(Map<String, dynamic> json) => Question(
       .toList(),
   logicFallback: json['logicFallback'] as String?,
   buttonUrl: json['buttonUrl'] as String?,
+  buttonExternal: json['buttonExternal'] as bool?,
+  ctaButtonLabel: (json['ctaButtonLabel'] as Map<String, dynamic>?)?.map(
+    (k, e) => MapEntry(k, e as String),
+  ),
   range: (json['range'] as num?)?.toInt(),
   scale: json['scale'] as String?,
+  isColorCodingEnabled: json['isColorCodingEnabled'] as bool?,
+  insightsEnabled: json['insightsEnabled'] as bool?,
 );
 
 Map<String, dynamic> _$QuestionToJson(Question instance) => <String, dynamic>{
@@ -125,8 +131,12 @@ Map<String, dynamic> _$QuestionToJson(Question instance) => <String, dynamic>{
   'logic': instance.logic,
   'logicFallback': instance.logicFallback,
   'buttonUrl': instance.buttonUrl,
+  'buttonExternal': instance.buttonExternal,
+  'ctaButtonLabel': instance.ctaButtonLabel,
   'range': instance.range,
   'scale': instance.scale,
+  'isColorCodingEnabled': instance.isColorCodingEnabled,
+  'insightsEnabled': instance.insightsEnabled,
 };
 
 const _$QuestionTypeEnumMap = {

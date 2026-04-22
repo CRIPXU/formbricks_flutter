@@ -225,7 +225,7 @@ class SurveyManager {
     _displayTimer?.cancel();
     _displayTimer = Timer(Duration(milliseconds: (timeout * 1000).toInt()), () {
       if (surveyPlatform == SurveyPlatform.inApp) {
-        int estimatedTimeInSecs = calculateEstimatedTime(targetSurvey.questions);
+        int estimatedTimeInSecs = calculateEstimatedTime(targetSurvey);
         ViewManager.showSurveyInApp(
           buildContext ?? context,
           client,
@@ -347,10 +347,19 @@ class SurveyManager {
     return random <= percentage;
   }
 
-  /// Estimates the time needed to complete the given questions.
-  int calculateEstimatedTime(List<Question> questions) {
+  /// Estimates the time needed to complete the given questions or blocks.
+  int calculateEstimatedTime(Survey survey) {
     int total = 0;
-    for (final q in questions) {
+    List<Question> allQuestions = [];
+    if (survey.blocks != null && survey.blocks!.isNotEmpty) {
+      for (var block in survey.blocks!) {
+        allQuestions.addAll(block.questions);
+      }
+    } else {
+      allQuestions.addAll(survey.questions ?? []);
+    }
+
+    for (final q in allQuestions) {
       total += (q.type == QuestionType.nps || q.type == QuestionType.rating) ? 5 : 10;
       total += 5; // time to read and think
       if (q.required == true) total += 2; // extra time for mandatory

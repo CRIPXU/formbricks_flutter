@@ -65,6 +65,7 @@ enum QuestionType {
 /// - [calculate]: Performs a calculation based on logic.
 enum LogicActionObjective {
   jumpToQuestion,
+  jumpToBlock,
   requireAnswer,
   calculate,
 }
@@ -128,6 +129,7 @@ enum ConditionOperator {
   endsWith,
   doesNotEndWith,
   isSubmitted,
+  isClicked,
   noOperator,
 }
 
@@ -139,6 +141,7 @@ enum ConditionOperator {
 /// - [variable]: A dynamic variable used in survey logic.
 enum OperandType {
   question,
+  element,
   static,
   variable,
 }

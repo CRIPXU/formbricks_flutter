@@ -69,6 +69,7 @@ class _CTAQuestionState extends State<CTAQuestion> {
                     field.didChange(true); // Validate
                   },
                   child: Text(
+                    translate(widget.question.ctaButtonLabel, context) ??
                     translate(widget.question.buttonLabel, context) ??
                         AppLocalizations.of(context)!.action,
                   ),

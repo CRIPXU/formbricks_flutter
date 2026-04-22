@@ -1,5 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 
+import 'block.dart';
 import 'ending.dart';
 import 'question.dart';
 import 'segment.dart';
@@ -14,7 +15,8 @@ class Survey {
   final String name;
   final String type;
   final String status;
-  final List<Question> questions;
+  final List<Question>? questions;
+  final List<Block>? blocks;
   final List<Trigger>? triggers;
   final Map<String, dynamic>? welcomeCard;
   final List<Ending>? endings;
@@ -29,6 +31,7 @@ class Survey {
   final List<SurveyLanguage>? languages;
   final List<dynamic>? followUps;
   final bool? isBackButtonHidden;
+  final bool? isAutoProgressingEnabled;
   final String? runOnDate;
   final String? closeOnDate;
   final Map<String, dynamic>? hiddenFields;
@@ -50,12 +53,14 @@ class Survey {
     this.languages,
     required this.type,
     required this.status,
-    required this.questions,
+    this.questions,
+    this.blocks,
     this.welcomeCard,
     this.endings,
     this.variables,
     this.followUps,
     this.isBackButtonHidden,
+    this.isAutoProgressingEnabled,
     this.runOnDate,
     this.closeOnDate,
     this.hiddenFields,

@@ -28,8 +28,11 @@ Survey _$SurveyFromJson(Map<String, dynamic> json) => Survey(
       .toList(),
   type: json['type'] as String,
   status: json['status'] as String,
-  questions: (json['questions'] as List<dynamic>)
-      .map((e) => Question.fromJson(e as Map<String, dynamic>))
+  questions: (json['questions'] as List<dynamic>?)
+      ?.map((e) => Question.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  blocks: (json['blocks'] as List<dynamic>?)
+      ?.map((e) => Block.fromJson(e as Map<String, dynamic>))
       .toList(),
   welcomeCard: json['welcomeCard'] as Map<String, dynamic>?,
   endings: (json['endings'] as List<dynamic>?)
@@ -40,6 +43,7 @@ Survey _$SurveyFromJson(Map<String, dynamic> json) => Survey(
       .toList(),
   followUps: json['followUps'] as List<dynamic>?,
   isBackButtonHidden: json['isBackButtonHidden'] as bool?,
+  isAutoProgressingEnabled: json['isAutoProgressingEnabled'] as bool?,
   runOnDate: json['runOnDate'] as String?,
   closeOnDate: json['closeOnDate'] as String?,
   hiddenFields: json['hiddenFields'] as Map<String, dynamic>?,
@@ -54,6 +58,7 @@ Map<String, dynamic> _$SurveyToJson(Survey instance) => <String, dynamic>{
   'type': instance.type,
   'status': instance.status,
   'questions': instance.questions,
+  'blocks': instance.blocks,
   'triggers': instance.triggers,
   'welcomeCard': instance.welcomeCard,
   'endings': instance.endings,
@@ -68,6 +73,7 @@ Map<String, dynamic> _$SurveyToJson(Survey instance) => <String, dynamic>{
   'languages': instance.languages,
   'followUps': instance.followUps,
   'isBackButtonHidden': instance.isBackButtonHidden,
+  'isAutoProgressingEnabled': instance.isAutoProgressingEnabled,
   'runOnDate': instance.runOnDate,
   'closeOnDate': instance.closeOnDate,
   'hiddenFields': instance.hiddenFields,
