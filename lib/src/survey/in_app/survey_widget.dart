@@ -203,7 +203,7 @@ class SurveyWidgetState extends State<SurveyWidget> {
   /// Helper to get all questions for total step calculation
   List<Question> get _allQuestions {
     if (_useBlocks) {
-      return survey.blocks!.expand((b) => b.questions).toList();
+      return survey.blocks?.expand((b) => b.questions).toList() ?? [];
     } else {
       return survey.questions ?? [];
     }
@@ -408,8 +408,8 @@ class SurveyWidgetState extends State<SurveyWidget> {
 
     setState(() {
       if (_useBlocks) {
-        final currentBlock = survey.blocks![_currentBlockIndex];
-        if (_currentElementIndex < currentBlock.questions.length - 1) {
+        final currentBlock = survey.blocks?[_currentBlockIndex];
+        if (currentBlock != null && _currentElementIndex < currentBlock.questions.length - 1) {
           _currentElementIndex++;
         } else {
           _currentBlockIndex++;
@@ -433,7 +433,10 @@ class SurveyWidgetState extends State<SurveyWidget> {
       if (index != -1) {
         _currentBlockIndex = index;
         _currentElementIndex = 0;
-        _trackVisit(survey.blocks![index].questions.first.id);
+        final firstQuestionId = survey.blocks?[index].questions.firstOrNull?.id;
+        if (firstQuestionId != null) {
+          _trackVisit(firstQuestionId);
+        }
       } else {
         _showEnding();
         _submitSurvey();
@@ -472,7 +475,10 @@ class SurveyWidgetState extends State<SurveyWidget> {
   /// Shows the ending screen
   void _showEnding() {
     setState(() {
-      _currentStep = survey.questions?.length ?? 0;
+      _currentStep = (survey.questions?.length ?? 0);
+      if (_useBlocks) {
+        _currentBlockIndex = (survey.blocks?.length ?? 0);
+      }
       _currentEndingStep = 0;
     });
   }
@@ -491,7 +497,8 @@ class SurveyWidgetState extends State<SurveyWidget> {
   bool _evaluateConditions(dynamic conditions) {
     if (conditions == null || conditions.conditions == null || conditions.conditions.isEmpty) return true;
 
-    bool result = conditions.connector == ConditionConnector.and;
+    final connector = conditions.connector ?? ConditionConnector.and;
+    bool result = connector == ConditionConnector.and;
 
     for (var condition in conditions.conditions) {
       bool conditionResult;
@@ -505,7 +512,7 @@ class SurveyWidgetState extends State<SurveyWidget> {
         final detail = condition is ConditionDetail ? condition : ConditionDetail.fromJson(condition);
         final leftValue = _getOperandValue(detail.leftOperand);
         final rightValue = detail.rightOperand != null ? _getOperandValue(detail.rightOperand!) : null;
-        conditionResult = _evaluateCondition(leftValue, detail.operator, rightValue);
+        conditionResult = _evaluateCondition(leftValue, detail.operator ?? ConditionOperator.noOperator, rightValue);
       }
       /// Fallback true for unexpected cases
       else {
@@ -513,7 +520,7 @@ class SurveyWidgetState extends State<SurveyWidget> {
       }
 
       /// Combine results using AND / OR logic
-      if (conditions.connector == ConditionConnector.and) {
+      if (connector == ConditionConnector.and) {
         result = result && conditionResult;
         if (!result) break; // early exit for AND
       } else {

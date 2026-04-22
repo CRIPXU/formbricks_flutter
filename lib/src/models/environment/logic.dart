@@ -10,7 +10,29 @@ class Logic {
   final Condition? conditions;
 
   Logic({required this.id, required this.actions, this.conditions});
-  factory Logic.fromJson(Map<String, dynamic> json) => _$LogicFromJson(json);
+  factory Logic.fromJson(Map<String, dynamic> json) {
+    Condition? parsedConditions;
+    if (json['conditions'] != null) {
+      if (json['conditions'] is Map) {
+        parsedConditions = Condition.fromJson(json['conditions'] as Map<String, dynamic>);
+      } else if (json['conditions'] is List) {
+        // Si es una lista, creamos un objeto Condition sintético con conector 'and'
+        parsedConditions = Condition(
+          id: 'synthetic-id',
+          connector: ConditionConnector.and,
+          conditions: json['conditions'] as List<dynamic>,
+        );
+      }
+    }
+
+    return Logic(
+      id: json['id'] as String,
+      actions: (json['actions'] as List<dynamic>)
+          .map((e) => LogicAction.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      conditions: parsedConditions,
+    );
+  }
   Map<String, dynamic> toJson() => _$LogicToJson(this);
 }
 
@@ -44,33 +66,65 @@ class LogicAction {
 class Condition {
   final String id;
   @JsonKey(name: 'operator')
-  final ConditionConnector connector;
-  final List<dynamic> conditions; // Can be ConditionDetail or nested Condition
+  final ConditionConnector? connector;
+  final List<dynamic> conditions;
 
   Condition({
     required this.id,
-    required this.connector,
+    this.connector,
     required this.conditions,
   });
-  factory Condition.fromJson(Map<String, dynamic> json) => _$ConditionFromJson(json);
-  Map<String, dynamic> toJson() => _$ConditionToJson(this);
+
+  factory Condition.fromJson(Map<String, dynamic> json) {
+    String? op = (json['operator'] ?? json['connector'])?.toString();
+    return Condition(
+      id: json['id']?.toString() ?? 'synthetic-id',
+      connector: op == 'or' ? ConditionConnector.or : ConditionConnector.and,
+      conditions: json['conditions'] as List<dynamic>? ?? [],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'operator': connector?.name,
+    'conditions': conditions,
+  };
 }
 
 @JsonSerializable()
 class ConditionDetail {
   final String id;
   @JsonKey(name: 'operator')
-  final ConditionOperator operator;
+  final ConditionOperator? operator;
   final Operand leftOperand;
   final Operand? rightOperand;
 
   ConditionDetail({
     required this.id,
-    required this.operator,
+    this.operator,
     required this.leftOperand,
     this.rightOperand,
   });
-  factory ConditionDetail.fromJson(Map<String, dynamic> json) => _$ConditionDetailFromJson(json);
+
+  factory ConditionDetail.fromJson(Map<String, dynamic> json) {
+    return ConditionDetail(
+      id: json['id']?.toString() ?? 'synthetic-detail-id',
+      operator: _parseOperator(json['operator']?.toString()),
+      leftOperand: Operand.fromJson(json['leftOperand'] as Map<String, dynamic>),
+      rightOperand: json['rightOperand'] != null 
+          ? Operand.fromJson(json['rightOperand'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+
+  static ConditionOperator _parseOperator(String? op) {
+    if (op == null) return ConditionOperator.noOperator;
+    return ConditionOperator.values.firstWhere(
+      (e) => e.name == op,
+      orElse: () => ConditionOperator.noOperator,
+    );
+  }
+
   Map<String, dynamic> toJson() => _$ConditionDetailToJson(this);
 }
 

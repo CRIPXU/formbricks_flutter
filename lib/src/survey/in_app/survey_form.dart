@@ -122,7 +122,9 @@ class SurveyForm extends StatelessWidget {
   /// Builds the main survey content based on the current step.
   Widget _buildSurvey(BuildContext context) {
     final bool useBlocks = survey.blocks != null && survey.blocks!.isNotEmpty;
-    final allQuestions = useBlocks ? survey.blocks!.expand((b) => b.questions).toList() : (survey.questions ?? []);
+    final allQuestions = useBlocks 
+        ? (survey.blocks?.expand((b) => b.questions).toList() ?? []) 
+        : (survey.questions ?? []);
     final totalSteps = allQuestions.length;
 
     Widget content;
@@ -137,14 +139,18 @@ class SurveyForm extends StatelessWidget {
     }
     /// Case: show current question
     else if (!useBlocks && currentStep < (survey.questions?.length ?? 0)) {
-      question = survey.questions![currentStep];
-      content = _buildQuestionWidget(question);
-      nextLabel = question.buttonLabel?['default'];
-      previousLabel = question.backButtonLabel?['default'];
+      question = survey.questions?[currentStep];
+      if (question != null) {
+        content = _buildQuestionWidget(question);
+        nextLabel = question.buttonLabel?['default'];
+        previousLabel = question.backButtonLabel?['default'];
+      } else {
+        content = Container();
+      }
     }
     else if (useBlocks && currentBlockIndex < (survey.blocks?.length ?? 0)) {
-      final block = survey.blocks![currentBlockIndex];
-      if (currentElementIndex < block.questions.length) {
+      final block = survey.blocks?[currentBlockIndex];
+      if (block != null && currentElementIndex < block.questions.length) {
         question = block.questions[currentElementIndex];
         content = _buildQuestionWidget(question);
         
@@ -179,8 +185,9 @@ class SurveyForm extends StatelessWidget {
     int progressIndex = currentStep;
     if (useBlocks) {
        progressIndex = 0;
-       for (int i=0; i<currentBlockIndex; i++) {
-         progressIndex += survey.blocks![i].questions.length;
+       final blocks = survey.blocks ?? [];
+       for (int i=0; i < currentBlockIndex && i < blocks.length; i++) {
+         progressIndex += blocks[i].questions.length;
        }
        progressIndex += currentElementIndex;
     }

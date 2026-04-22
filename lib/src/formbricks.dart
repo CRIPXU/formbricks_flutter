@@ -19,6 +19,9 @@ import 'utils/sdk_error.dart';
 class Formbricks {
   /// Flag to indicate whether the SDK has been initialized.
   bool isInitialized = false;
+  
+  /// Global navigator key to access context from anywhere.
+  GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   /// Private singleton instance of the Formbricks SDK.
   static Formbricks? _instance = Formbricks._internal();

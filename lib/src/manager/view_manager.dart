@@ -99,7 +99,13 @@ class ViewManager {
         context: context,
         isDismissible: survey.projectOverwrites?['clickOutsideClose'] ?? false,
         backgroundColor: Colors.transparent,
-        builder: (context) => widget,
+        isScrollControlled: true, // Permitir que el contenido defina su tamaño
+        builder: (context) => ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.9,
+          ),
+          child: widget,
+        ),
       );
     }
   }

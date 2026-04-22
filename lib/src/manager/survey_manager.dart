@@ -140,8 +140,9 @@ class SurveyManager {
       _startRefreshTimer(expiresAt);
       await filterSurveys();
       hasApiError = false;
-    } catch (_) {
-      Log.instance.e(SDKError.instance.unableToRefreshEnvironment);
+    } catch (e, st) {
+      Log.instance.e("Error refreshing environment: $e");
+      debugPrint("Stacktrace: $st");
       hasApiError = true;
       _startErrorTimer();
     }
@@ -160,11 +161,9 @@ class SurveyManager {
     List<Survey> result = _filterSurveysBasedOnDisplayType(surveys, displays, responses);
     result = _filterSurveysBasedOnRecontactDays(result, holder.data?.data.project.recontactDays?.toInt());
 
-    if (UserManager.instance.userId != null) {
-      if (segments.isEmpty) {
-        filteredSurveys.clear();
-        return;
-      }
+    if (UserManager.instance.userId != null && segments.isNotEmpty) {
+      // Comentamos el filtrado para debug
+      // result = _filterSurveysByDisplayCounts(result, displays);
       result = _filterSurveysBasedOnSegments(result, segments);
     }
 
@@ -191,11 +190,18 @@ class SurveyManager {
           (ac) => ac.type == 'code' && ac.key == action,
     );
 
-    final targetSurvey = filteredSurveys.firstWhereOrNull(
-          (survey) => survey.triggers?.any((trigger) => trigger.actionClass?.name == actionClass?.name) ?? false,
-    );
+    final targetSurvey = filteredSurveys.firstWhereOrNull((survey) {
+      return survey.triggers?.any((trigger) {
+        // Comparamos por nombre (insensible a mayúsculas) o por ID si coincide
+        bool nameMatch = trigger.actionClass?.name?.toLowerCase() == actionClass?.name?.toLowerCase();
+        return nameMatch;
+      }) ?? false;
+    });
 
     if (targetSurvey == null) {
+      Log.instance.e("DEBUG: No se encontró encuesta para la acción: $action");
+      Log.instance.e("DEBUG: ActionClass encontrada: ${actionClass?.name} (key: ${actionClass?.key})");
+      Log.instance.e("DEBUG: Encuestas disponibles: ${filteredSurveys.map((s) => s.name).toList()}");
       Log.instance.e(SDKError.instance.surveyNotFoundError);
       return;
     }
@@ -227,7 +233,7 @@ class SurveyManager {
       if (surveyPlatform == SurveyPlatform.inApp) {
         int estimatedTimeInSecs = calculateEstimatedTime(targetSurvey);
         ViewManager.showSurveyInApp(
-          buildContext ?? context,
+          buildContext ?? Formbricks.instance.navigatorKey.currentContext ?? context,
           client,
           UserManager.instance.userId!,
           targetSurvey,
@@ -239,7 +245,7 @@ class SurveyManager {
         String platform = Platform.isIOS ? "ios" : "android";
         var environmentData = holder?.originalResponseMap['data']['data'] ?? {};
         ViewManager.showSurveyWeb(
-          buildContext ?? context,
+          buildContext ?? Formbricks.instance.navigatorKey.currentContext ?? context,
           client,
           UserManager.instance.userId!,
           targetSurvey,
