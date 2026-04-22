@@ -23,12 +23,12 @@ class SurveyButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return currentStep < survey.questions.length
+    return currentStep < (survey.questions?.length ?? 0)
         ? Padding(
             padding: const EdgeInsets.only(top: 16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: currentStep >= survey.questions.length
+              crossAxisAlignment: currentStep >= (survey.questions?.length ?? 0)
                   ? CrossAxisAlignment.center
                   : CrossAxisAlignment.start,
               children: [
@@ -47,10 +47,10 @@ class SurveyButtons extends StatelessWidget {
                   if (currentStep == -1 ||
                       (currentStep > -1 &&
                           ![QuestionType.rating, QuestionType.nps].contains(
-                            survey.questions.elementAtOrNull(currentStep)?.type,
+                            (survey.questions ?? []).elementAtOrNull(currentStep)?.type,
                           )))
                     ElevatedButton(
-                      onPressed: currentStep >= survey.questions.length
+                      onPressed: currentStep >= (survey.questions?.length ?? 0)
                           ? () {
                               onComplete
                                   ?.call(); // notify TriggerManager to show next

@@ -212,7 +212,7 @@ class SurveyContent extends StatelessWidget {
           ),
 
           /// Bottom progress bar and copyright section
-          currentStep >= survey.questions.length
+          currentStep >= (survey.questions?.length ?? 0)
               ? SizedBox.shrink()
               : Container(
             width: width,

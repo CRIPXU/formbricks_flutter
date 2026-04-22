@@ -13,7 +13,6 @@ import 'survey_form.dart';
 
 /// Main Flutter widget that renders a full survey experience for a user.
 class SurveyWidget extends StatefulWidget {
-
   final FormbricksClient client;
   final Survey survey;
   final String userId;
@@ -83,7 +82,6 @@ class SurveyWidgetState extends State<SurveyWidget> {
   /// Track visited question IDs
   final List<String> _visitedQuestionIds = [];
 
-
   /// Local instance of survey to allow mutation
   late Survey survey;
 
@@ -96,7 +94,6 @@ class SurveyWidgetState extends State<SurveyWidget> {
   bool isLoading = true;
   String? error;
   String? displayId;
-
 
   final formKey = GlobalKey<FormState>();
 
@@ -111,6 +108,7 @@ class SurveyWidgetState extends State<SurveyWidget> {
     _inactivitySecondsRemaining = widget.survey.autoClose ?? 10;
     hasUserInteracted = false;
     _useBlocks = widget.survey.blocks != null && widget.survey.blocks!.isNotEmpty;
+
     /// Skip welcome screen if disabled
     if (widget.survey.welcomeCard?['enabled'] == false) {
       if (_useBlocks) {
@@ -124,8 +122,8 @@ class SurveyWidgetState extends State<SurveyWidget> {
     _fetchSurvey();
     _createDisplay();
     _initializeVariables();
-    WidgetsBinding.instance.addPostFrameCallback((_){
-      if(widget.survey.autoClose != null) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.survey.autoClose != null) {
         _startInactivityTimer(widget.survey.autoClose!);
       }
     });
@@ -145,7 +143,7 @@ class SurveyWidgetState extends State<SurveyWidget> {
     _inactivityTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_inactivitySecondsRemaining == 1) {
         timer.cancel();
-        if(!hasUserInteracted) {
+        if (!hasUserInteracted) {
           _closeSurvey();
         }
       } else {
@@ -156,7 +154,7 @@ class SurveyWidgetState extends State<SurveyWidget> {
 
   /// Called after survey.autoClose seconds of inactivity
   void _closeSurvey() {
-    if(mounted) {
+    if (mounted) {
       widget.onComplete?.call(); // notify TriggerManager to show next
       Navigator.of(context).maybePop();
     }
@@ -214,11 +212,8 @@ class SurveyWidgetState extends State<SurveyWidget> {
   /// Registers a display session for formbricks analytics/tracking
   Future<void> _createDisplay() async {
     try {
-      displayId = await widget.client.createDisplay(
-        surveyId: widget.survey.id,
-        userId: widget.userId,
-      );
-      if(mounted) {
+      displayId = await widget.client.createDisplay(surveyId: widget.survey.id, userId: widget.userId);
+      if (mounted) {
         context.userManager?.onDisplay(widget.survey.id);
       }
     } catch (e) {
@@ -255,53 +250,36 @@ class SurveyWidgetState extends State<SurveyWidget> {
     }
 
     try {
-      await widget.client.submitResponse(
-        surveyId: widget.survey.id,
-        userId: widget.userId,
-        data: responses,
-      );
+      await widget.client.submitResponse(surveyId: widget.survey.id, userId: widget.userId, data: responses);
       if (survey.delay != null) {
         Future.delayed(Duration(seconds: survey.delay!.toInt()), () {
           _closeSurvey();
         });
       }
-      if(mounted) {
+      if (mounted) {
         context.userManager?.onResponse(widget.survey.id);
         if (kDebugMode) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Survey submitted successfully!')),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Survey submitted successfully!')));
         }
       }
     } on SocketException {
       // Internet unavailable
-      _cacheUserResponseOnError({
-        'surveyId': widget.survey.id,
-        'userId': widget.userId,
-        'data': responses,
-        'finished': true,
-      });
+      _cacheUserResponseOnError({'surveyId': widget.survey.id, 'userId': widget.userId, 'data': responses, 'finished': true});
     } on HttpException {
-      _cacheUserResponseOnError({
-        'surveyId': widget.survey.id,
-        'userId': widget.userId,
-        'data': responses,
-        'finished': true,
-      });
+      _cacheUserResponseOnError({'surveyId': widget.survey.id, 'userId': widget.userId, 'data': responses, 'finished': true});
     } catch (e) {
       setState(() {
         error = e.toString();
       });
-    }finally {
+    } finally {
       _isSubmitting = false;
     }
   }
 
   /// caching UserResponse on Internet failure or Server issue
-  void _cacheUserResponseOnError(Map<String, dynamic> userResponse){
+  void _cacheUserResponseOnError(Map<String, dynamic> userResponse) {
     context.surveyManager?.setUnSyncUserResponse(userResponse);
   }
-
 
   /// Advances to the next question, applying logic if needed
   void nextStep() {
@@ -310,17 +288,24 @@ class SurveyWidgetState extends State<SurveyWidget> {
     form?.validate();
 
     /// Show questions if welcome card is enabled
-    bool isAtWelcome = _useBlocks ? (_currentBlockIndex == 0 && _currentElementIndex == 0 && widget.survey.welcomeCard?['enabled'] == true && !hasUserInteracted) : (_currentStep == -1 && survey.welcomeCard?['enabled'] == true);
-    
-    // In fact, the previous logic used _currentStep == -1 for welcome. 
+    bool isAtWelcome = _useBlocks
+        ? (_currentBlockIndex == 0 && _currentElementIndex == 0 && widget.survey.welcomeCard?['enabled'] == true && !hasUserInteracted)
+        : (_currentStep == -1 && survey.welcomeCard?['enabled'] == true);
+
+    // In fact, the previous logic used _currentStep == -1 for welcome.
     // Let's stick to that or similar.
-    if (_useBlocks && _currentBlockIndex == 0 && _currentElementIndex == 0 && widget.survey.welcomeCard?['enabled'] == true && responses.isEmpty && _currentStep == -1) {
-       setState(() {
-         _currentStep = 0;
-         _currentBlockIndex = 0;
-         _currentElementIndex = 0;
-       });
-       return;
+    if (_useBlocks &&
+        _currentBlockIndex == 0 &&
+        _currentElementIndex == 0 &&
+        widget.survey.welcomeCard?['enabled'] == true &&
+        responses.isEmpty &&
+        _currentStep == -1) {
+      setState(() {
+        _currentStep = 0;
+        _currentBlockIndex = 0;
+        _currentElementIndex = 0;
+      });
+      return;
     }
 
     if (!_useBlocks && _currentStep == -1 && survey.welcomeCard?['enabled'] == true) {
@@ -380,30 +365,30 @@ class SurveyWidgetState extends State<SurveyWidget> {
     /// Block-level logic (New structure)
     if (_useBlocks) {
       final currentBlock = survey.blocks![_currentBlockIndex];
-      
+
       // If we are at the last element of the block, evaluate block logic
       if (_currentElementIndex == currentBlock.questions.length - 1) {
         if (currentBlock.logic != null && currentBlock.logic!.isNotEmpty) {
-           String? jumpTarget;
-           for (final logic in currentBlock.logic!) {
-             if (_evaluateConditions(logic.conditions)) {
-               for (final action in logic.actions) {
-                 if (action.objective == LogicActionObjective.jumpToBlock) {
-                   jumpTarget = action.target;
-                 } else if (action.objective == LogicActionObjective.jumpToQuestion) {
-                   // Some blocks might jump to specific questions?
-                   _jumpToQuestion(action.target!);
-                   return;
-                 } else {
-                   _executeAction(action);
-                 }
-               }
-             }
-           }
-           if (jumpTarget != null) {
-             _jumpToBlock(jumpTarget);
-             return;
-           }
+          String? jumpTarget;
+          for (final logic in currentBlock.logic!) {
+            if (_evaluateConditions(logic.conditions)) {
+              for (final action in logic.actions) {
+                if (action.objective == LogicActionObjective.jumpToBlock) {
+                  jumpTarget = action.target;
+                } else if (action.objective == LogicActionObjective.jumpToQuestion) {
+                  // Some blocks might jump to specific questions?
+                  _jumpToQuestion(action.target!);
+                  return;
+                } else {
+                  _executeAction(action);
+                }
+              }
+            }
+          }
+          if (jumpTarget != null) {
+            _jumpToBlock(jumpTarget);
+            return;
+          }
         }
       }
     }
@@ -468,9 +453,9 @@ class SurveyWidgetState extends State<SurveyWidget> {
       _visitedQuestionIds.removeLast(); // remove current
       final previousId = _visitedQuestionIds.last;
 
-      final index = survey.questions.indexWhere((q) => q.id == previousId);
+      final index = survey.questions?.indexWhere((q) => q.id == previousId);
       if (index != -1) {
-        setState(() => _currentStep = index);
+        setState(() => _currentStep = index!);
       }
     } else if (_visitedQuestionIds.length == 1 && survey.welcomeCard?['enabled'] == true) {
       setState(() => _currentStep = -1); // Back to welcome
@@ -487,7 +472,7 @@ class SurveyWidgetState extends State<SurveyWidget> {
   /// Shows the ending screen
   void _showEnding() {
     setState(() {
-      _currentStep = survey.questions.length;
+      _currentStep = survey.questions?.length ?? 0;
       _currentEndingStep = 0;
     });
   }
@@ -499,12 +484,10 @@ class SurveyWidgetState extends State<SurveyWidget> {
 
   /// Initializes variables used in logic conditions and calculations
   void _initializeVariables() {
-    _variables.addAll({
-      for (var v in survey.variables ?? []) v['id']: v['value'],
-    });
+    _variables.addAll({for (var v in survey.variables ?? []) v['id']: v['value']});
   }
 
-/// Recursively evaluates a a tree of conditions, that can contain mixed types of condition or conditionDetail
+  /// Recursively evaluates a a tree of conditions, that can contain mixed types of condition or conditionDetail
   bool _evaluateConditions(dynamic conditions) {
     if (conditions == null || conditions.conditions == null || conditions.conditions.isEmpty) return true;
 
@@ -521,10 +504,8 @@ class SurveyWidgetState extends State<SurveyWidget> {
       else if (condition is Map<String, dynamic> && condition.containsKey('operator') || condition is ConditionDetail) {
         final detail = condition is ConditionDetail ? condition : ConditionDetail.fromJson(condition);
         final leftValue = _getOperandValue(detail.leftOperand);
-        final rightValue = detail.rightOperand != null
-            ? _getOperandValue(detail.rightOperand!)
-            : null;
-        conditionResult = _evaluateCondition( leftValue, detail.operator, rightValue);
+        final rightValue = detail.rightOperand != null ? _getOperandValue(detail.rightOperand!) : null;
+        conditionResult = _evaluateCondition(leftValue, detail.operator, rightValue);
       }
       /// Fallback true for unexpected cases
       else {
@@ -544,44 +525,59 @@ class SurveyWidgetState extends State<SurveyWidget> {
     return result;
   }
 
-
   /// Resolves operand values from responses or variables
   dynamic _getOperandValue(Operand operand) {
     switch (operand.type) {
       case OperandType.question:
       case OperandType.element:
         return responses[operand.value] ?? '';
-      case OperandType.static: return operand.value;
-      case OperandType.variable: return _variables[operand.value] ?? 0;
-      }
+      case OperandType.static:
+        return operand.value;
+      case OperandType.variable:
+        return _variables[operand.value] ?? 0;
+    }
   }
 
   /// Applies basic comparison operators for logic conditions
   bool _evaluateCondition(dynamic left, ConditionOperator operator, dynamic right) {
-
     ///Picks the left id for comparison for multiple choice and pictureSelection questions
-    final currentQuestion = survey.questions.elementAtOrNull(_currentStep);
-    if(currentQuestion?.type == QuestionType.multipleChoiceSingle || currentQuestion?.type == QuestionType.multipleChoiceMulti || currentQuestion?.type == QuestionType.pictureSelection){
+    final currentQuestion = (survey.questions ?? []).elementAtOrNull(_currentStep);
+    if (currentQuestion?.type == QuestionType.multipleChoiceSingle ||
+        currentQuestion?.type == QuestionType.multipleChoiceMulti ||
+        currentQuestion?.type == QuestionType.pictureSelection) {
       String? choiceId = getIdFromChoices(currentQuestion?.choices ?? [], left, currentQuestion?.type == QuestionType.pictureSelection);
-      if(choiceId != null) {
+      if (choiceId != null) {
         left = choiceId;
       }
     }
 
     switch (operator) {
-      case ConditionOperator.equals: return left == right;
-      case ConditionOperator.equalsOneOf: return (right as List).contains(left.toString());
-      case ConditionOperator.isLessThan: return num.parse(left.toString()) < num.parse(right.toString());
-      case ConditionOperator.isLessThanOrEqual: return num.parse(left.toString()) <= num.parse(right.toString());
-      case ConditionOperator.isGreaterThan: return num.parse(left.toString()) > num.parse(right.toString());
-      case ConditionOperator.isGreaterThanOrEqual: return num.parse(left.toString()) >= num.parse(right.toString());
-      case ConditionOperator.doesNotEqual: return left != right;
-      case ConditionOperator.contains: return left.toString().contains(right.toString());
-      case ConditionOperator.doesNotContain: return !left.toString().contains(right.toString());
-      case ConditionOperator.startsWith: return left.toString().startsWith(right.toString());
-      case ConditionOperator.doesNotStartWith: return !left.toString().startsWith(right.toString());
-      case ConditionOperator.endsWith: return left.toString().endsWith(right.toString());
-      case ConditionOperator.doesNotEndWith: return !left.toString().endsWith(right.toString());
+      case ConditionOperator.equals:
+        return left == right;
+      case ConditionOperator.equalsOneOf:
+        return (right as List).contains(left.toString());
+      case ConditionOperator.isLessThan:
+        return num.parse(left.toString()) < num.parse(right.toString());
+      case ConditionOperator.isLessThanOrEqual:
+        return num.parse(left.toString()) <= num.parse(right.toString());
+      case ConditionOperator.isGreaterThan:
+        return num.parse(left.toString()) > num.parse(right.toString());
+      case ConditionOperator.isGreaterThanOrEqual:
+        return num.parse(left.toString()) >= num.parse(right.toString());
+      case ConditionOperator.doesNotEqual:
+        return left != right;
+      case ConditionOperator.contains:
+        return left.toString().contains(right.toString());
+      case ConditionOperator.doesNotContain:
+        return !left.toString().contains(right.toString());
+      case ConditionOperator.startsWith:
+        return left.toString().startsWith(right.toString());
+      case ConditionOperator.doesNotStartWith:
+        return !left.toString().startsWith(right.toString());
+      case ConditionOperator.endsWith:
+        return left.toString().endsWith(right.toString());
+      case ConditionOperator.doesNotEndWith:
+        return !left.toString().endsWith(right.toString());
       case ConditionOperator.isSubmitted: // Evaluate only at the point of progressing from the specific question
         /// Make sure 'left' refers to a questionId
         if (left is String) {
@@ -592,24 +588,24 @@ class SurveyWidgetState extends State<SurveyWidget> {
         return false;
       case ConditionOperator.isClicked:
         if (left is String) {
-           return responses[left] == true || responses[left] == 'clicked';
+          return responses[left] == true || responses[left] == 'clicked';
         }
         return false;
       default:
         return false;
-      }
+    }
   }
 
   /// Extracts ID from choices of MultipleChoice questions
   String? getIdFromChoices(List<Map<String, dynamic>> choices, String value, bool isPictureSelection) {
-    if(isPictureSelection){
+    if (isPictureSelection) {
       for (final choice in choices) {
         if (choice['imageUrl'] == value) {
           return choice['id'];
         }
       }
       return null;
-    }else{
+    } else {
       for (final choice in choices) {
         if (translate(choice['label'], context) == value) {
           return choice['id'];
@@ -625,6 +621,9 @@ class SurveyWidgetState extends State<SurveyWidget> {
       case LogicActionObjective.jumpToQuestion:
         _jumpToQuestion(action.target!);
         break;
+      case LogicActionObjective.jumpToBlock:
+        _jumpToBlock(action.target!);
+        break;
       case LogicActionObjective.requireAnswer:
         _requireAnswer(action.target ?? action.variableId);
         break;
@@ -636,11 +635,11 @@ class SurveyWidgetState extends State<SurveyWidget> {
 
   /// Moves to a specific question by ID
   void _jumpToQuestion(String targetId) {
-    _currentStep = survey.questions.indexWhere((q) => q.id == targetId);
+    _currentStep = (survey.questions ?? []).indexWhere((q) => q.id == targetId);
     if (_currentStep == -1) {
       _showEnding();
       _submitSurvey();
-    }else {
+    } else {
       _trackVisit(targetId);
       if (mounted) setState(() {});
     }
@@ -658,22 +657,33 @@ class SurveyWidgetState extends State<SurveyWidget> {
 
     num result;
     switch (action.operator) {
-      case LogicActionOperator.add: result = leftValue + rightValue; break;
-      case LogicActionOperator.subtract: result = leftValue - rightValue; break;
-      case LogicActionOperator.multiply: result = leftValue * rightValue; break;
-      case LogicActionOperator.divide: result = rightValue != 0 ? leftValue / rightValue : leftValue; break;
-      case LogicActionOperator.assign: result = rightValue; break;
-      default: result = leftValue;
+      case LogicActionOperator.add:
+        result = leftValue + rightValue;
+        break;
+      case LogicActionOperator.subtract:
+        result = leftValue - rightValue;
+        break;
+      case LogicActionOperator.multiply:
+        result = leftValue * rightValue;
+        break;
+      case LogicActionOperator.divide:
+        result = rightValue != 0 ? leftValue / rightValue : leftValue;
+        break;
+      case LogicActionOperator.assign:
+        result = rightValue;
+        break;
+      default:
+        result = leftValue;
     }
     _variables[variableId] = result;
   }
 
   /// Marks a question as required and triggers validation
   void _requireAnswer(String? targetId) {
-    final targetQuestion = survey.questions.firstWhere(
-          (q) => q.id == targetId,
-      orElse: () => survey.questions.firstWhere(
-            (q) => q.id == _variables.keys.firstWhere((k) => _variables[k] == targetId, orElse: () => ""),
+    final targetQuestion = (survey.questions ?? []).firstWhere(
+      (q) => q.id == targetId,
+      orElse: () => (survey.questions ?? []).firstWhere(
+        (q) => q.id == _variables.keys.firstWhere((k) => _variables[k] == targetId, orElse: () => ""),
         orElse: () => Question(id: '', type: QuestionType.unSupportedType, headline: {}, required: false, logic: []),
       ),
     );
@@ -692,9 +702,7 @@ class SurveyWidgetState extends State<SurveyWidget> {
 
     return Container(
       color: Theme.of(context).cardColor,
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: SurveyForm(
         client: widget.client,
         userId: widget.userId,
