@@ -9,6 +9,7 @@ class SurveyButtons extends StatelessWidget {
   final Function() previousStep;
   final Function() nextStep;
   final VoidCallback? onComplete;
+  final QuestionType? currentQuestionType;
 
   const SurveyButtons({
     super.key,
@@ -19,16 +20,22 @@ class SurveyButtons extends StatelessWidget {
     required this.previousLabel,
     required this.survey,
     required this.onComplete,
+    this.currentQuestionType,
   });
 
   @override
   Widget build(BuildContext context) {
-    return currentStep < (survey.questions?.length ?? 0)
+    final bool useBlocks = survey.blocks != null && survey.blocks!.isNotEmpty;
+    final int totalQuestions = useBlocks
+        ? survey.blocks!.fold(0, (sum, b) => sum + b.questions.length)
+        : (survey.questions?.length ?? 0);
+
+    return currentStep < totalQuestions
         ? Padding(
             padding: const EdgeInsets.only(top: 16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: currentStep >= (survey.questions?.length ?? 0)
+              crossAxisAlignment: currentStep >= totalQuestions
                   ? CrossAxisAlignment.center
                   : CrossAxisAlignment.start,
               children: [
@@ -47,10 +54,10 @@ class SurveyButtons extends StatelessWidget {
                   if (currentStep == -1 ||
                       (currentStep > -1 &&
                           ![QuestionType.rating, QuestionType.nps].contains(
-                            (survey.questions ?? []).elementAtOrNull(currentStep)?.type,
+                            currentQuestionType,
                           )))
                     ElevatedButton(
-                      onPressed: currentStep >= (survey.questions?.length ?? 0)
+                      onPressed: currentStep >= totalQuestions
                           ? () {
                               onComplete
                                   ?.call(); // notify TriggerManager to show next

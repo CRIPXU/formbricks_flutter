@@ -138,7 +138,7 @@ class SurveyForm extends StatelessWidget {
       nextLabel = survey.welcomeCard!['buttonLabel']?['default'] ?? 'Next';
     }
     /// Case: show current question
-    else if (!useBlocks && currentStep < (survey.questions?.length ?? 0)) {
+    else if (!useBlocks && currentStep >= 0 && currentStep < (survey.questions?.length ?? 0)) {
       question = survey.questions?[currentStep];
       if (question != null) {
         content = _buildQuestionWidget(question);
@@ -148,17 +148,20 @@ class SurveyForm extends StatelessWidget {
         content = Container();
       }
     }
-    else if (useBlocks && currentBlockIndex < (survey.blocks?.length ?? 0)) {
+    else if (useBlocks && currentBlockIndex >= 0 && currentBlockIndex < (survey.blocks?.length ?? 0)) {
       final block = survey.blocks?[currentBlockIndex];
-      if (block != null && currentElementIndex < block.questions.length) {
-        question = block.questions[currentElementIndex];
-        content = _buildQuestionWidget(question);
-        
-        // Use block label if question label is null
-        nextLabel = question.buttonLabel?['default'] ?? block.buttonLabel?['default'];
-        previousLabel = question.backButtonLabel?['default'] ?? block.backButtonLabel?['default'];
+      if (block != null) {
+        question = block.questions.elementAtOrNull(currentElementIndex);
+        if (question != null) {
+          content = _buildQuestionWidget(question);
+          // Use block label if question label is null
+          nextLabel = question.buttonLabel?['default'] ?? block.buttonLabel?['default'];
+          previousLabel = question.backButtonLabel?['default'] ?? block.backButtonLabel?['default'];
+        } else {
+          content = Container();
+        }
       } else {
-        content = Container(); // Should not happen
+        content = Container();
       }
     }
     /// Case: show ending or final screen
@@ -211,6 +214,7 @@ class SurveyForm extends StatelessWidget {
       clickOutsideClose: clickOutsideClose,
       hasUserInteracted: hasUserInteracted,
       inactivitySecondsRemaining: inactivitySecondsRemaining,
+      currentQuestionType: question?.type,
       child: content,
     );
   }

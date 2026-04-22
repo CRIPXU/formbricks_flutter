@@ -364,7 +364,8 @@ class SurveyWidgetState extends State<SurveyWidget> {
 
     /// Block-level logic (New structure)
     if (_useBlocks) {
-      final currentBlock = survey.blocks![_currentBlockIndex];
+      final currentBlock = survey.blocks?.elementAtOrNull(_currentBlockIndex);
+      if (currentBlock == null) return;
 
       // If we are at the last element of the block, evaluate block logic
       if (_currentElementIndex == currentBlock.questions.length - 1) {
@@ -456,12 +457,32 @@ class SurveyWidgetState extends State<SurveyWidget> {
       _visitedQuestionIds.removeLast(); // remove current
       final previousId = _visitedQuestionIds.last;
 
-      final index = survey.questions?.indexWhere((q) => q.id == previousId);
-      if (index != -1) {
-        setState(() => _currentStep = index!);
+      if (_useBlocks) {
+        for (int i = 0; i < (survey.blocks?.length ?? 0); i++) {
+          final block = survey.blocks![i];
+          final elementIndex = block.questions.indexWhere((q) => q.id == previousId);
+          if (elementIndex != -1) {
+            setState(() {
+              _currentBlockIndex = i;
+              _currentElementIndex = elementIndex;
+            });
+            return;
+          }
+        }
+      } else {
+        final index = survey.questions?.indexWhere((q) => q.id == previousId) ?? -1;
+        if (index != -1) {
+          setState(() => _currentStep = index);
+        }
       }
     } else if (_visitedQuestionIds.length == 1 && survey.welcomeCard?['enabled'] == true) {
-      setState(() => _currentStep = -1); // Back to welcome
+      setState(() {
+        _currentStep = -1;
+        if (_useBlocks) {
+          _currentBlockIndex = 0;
+          _currentElementIndex = 0;
+        }
+      }); // Back to welcome
     }
   }
 
@@ -548,7 +569,7 @@ class SurveyWidgetState extends State<SurveyWidget> {
   /// Applies basic comparison operators for logic conditions
   bool _evaluateCondition(dynamic left, ConditionOperator operator, dynamic right) {
     ///Picks the left id for comparison for multiple choice and pictureSelection questions
-    final currentQuestion = (survey.questions ?? []).elementAtOrNull(_currentStep);
+    final currentQuestion = _currentQuestion;
     if (currentQuestion?.type == QuestionType.multipleChoiceSingle ||
         currentQuestion?.type == QuestionType.multipleChoiceMulti ||
         currentQuestion?.type == QuestionType.pictureSelection) {
@@ -642,13 +663,31 @@ class SurveyWidgetState extends State<SurveyWidget> {
 
   /// Moves to a specific question by ID
   void _jumpToQuestion(String targetId) {
-    _currentStep = (survey.questions ?? []).indexWhere((q) => q.id == targetId);
-    if (_currentStep == -1) {
+    if (_useBlocks) {
+      for (int i = 0; i < (survey.blocks?.length ?? 0); i++) {
+        final block = survey.blocks![i];
+        final elementIndex = block.questions.indexWhere((q) => q.id == targetId);
+        if (elementIndex != -1) {
+          setState(() {
+            _currentBlockIndex = i;
+            _currentElementIndex = elementIndex;
+          });
+          _trackVisit(targetId);
+          return;
+        }
+      }
+      // If not found in blocks, maybe it's an ending or fallback to show ending
       _showEnding();
       _submitSurvey();
     } else {
-      _trackVisit(targetId);
-      if (mounted) setState(() {});
+      _currentStep = (survey.questions ?? []).indexWhere((q) => q.id == targetId);
+      if (_currentStep == -1) {
+        _showEnding();
+        _submitSurvey();
+      } else {
+        _trackVisit(targetId);
+        if (mounted) setState(() {});
+      }
     }
   }
 
@@ -687,9 +726,9 @@ class SurveyWidgetState extends State<SurveyWidget> {
 
   /// Marks a question as required and triggers validation
   void _requireAnswer(String? targetId) {
-    final targetQuestion = (survey.questions ?? []).firstWhere(
+    final targetQuestion = _allQuestions.firstWhere(
       (q) => q.id == targetId,
-      orElse: () => (survey.questions ?? []).firstWhere(
+      orElse: () => _allQuestions.firstWhere(
         (q) => q.id == _variables.keys.firstWhere((k) => _variables[k] == targetId, orElse: () => ""),
         orElse: () => Question(id: '', type: QuestionType.unSupportedType, headline: {}, required: false, logic: []),
       ),

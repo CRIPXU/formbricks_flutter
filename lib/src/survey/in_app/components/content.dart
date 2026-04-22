@@ -59,6 +59,9 @@ class SurveyContent extends StatelessWidget {
 
   /// Countdown value before auto-close (in seconds)
   final int inactivitySecondsRemaining;
+  
+  /// The type of the current question
+  final QuestionType? currentQuestionType;
 
   /// The current survey content (typically a question widget)
   final Widget child;
@@ -86,6 +89,7 @@ class SurveyContent extends StatelessWidget {
     required this.clickOutsideClose,
     required this.hasUserInteracted,
     required this.inactivitySecondsRemaining,
+    this.currentQuestionType,
   });
 
   @override
@@ -179,6 +183,7 @@ class SurveyContent extends StatelessWidget {
                       previousLabel: previousLabel,
                       survey: survey,
                       onComplete: onComplete,
+                      currentQuestionType: currentQuestionType,
                     ),
 
                     /// Show estimated time (only on welcome card)

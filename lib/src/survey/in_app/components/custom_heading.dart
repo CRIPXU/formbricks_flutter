@@ -62,7 +62,7 @@ class CustomHeading extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                translate(question.headline, context) ?? '',
+                stripHtml(translate(question.headline, context)),
                 style:
                     theme.textTheme.headlineMedium ??
                     const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -86,7 +86,7 @@ class CustomHeading extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
-              translate(question.subheader, context) ?? '',
+              stripHtml(translate(question.subheader, context)),
               style: theme.textTheme.bodyMedium,
             ),
           ),

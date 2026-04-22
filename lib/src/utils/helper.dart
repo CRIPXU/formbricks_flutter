@@ -30,6 +30,13 @@ String? translate(Map<String, dynamic>? map, BuildContext context) {
   return (map)?.tr(context);
 }
 
+/// Strips HTML tags from a string.
+String stripHtml(String? htmlString) {
+  if (htmlString == null) return '';
+  final regExp = RegExp(r'<[^>]*>', multiLine: true, caseSensitive: false);
+  return htmlString.replaceAll(regExp, '');
+}
+
 /// Opens a full-screen modal to show a zoomed-in version of an image from the given [imageUrl].
 ///
 /// Uses [CachedNetworkImage] for efficient loading, with loading and error states handled.
