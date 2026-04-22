@@ -48,11 +48,11 @@ class _ContactInfoQuestionState extends State<ContactInfoQuestion> {
   }
 
   void _populateFields(List<String> response) {
-    _firstNameController.text = response[0];
-    _lastNameController.text = response[1];
-    _emailController.text = response[2];
-    _phoneController.text = response[3];
-    _companyController.text = response[4];
+    if (response.isNotEmpty && response[0] != _firstNameController.text) _firstNameController.text = response[0];
+    if (response.length > 1 && response[1] != _lastNameController.text) _lastNameController.text = response[1];
+    if (response.length > 2 && response[2] != _emailController.text) _emailController.text = response[2];
+    if (response.length > 3 && response[3] != _phoneController.text) _phoneController.text = response[3];
+    if (response.length > 4 && response[4] != _companyController.text) _companyController.text = response[4];
   }
 
   void _updateResponse() {

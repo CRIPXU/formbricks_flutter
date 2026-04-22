@@ -47,12 +47,12 @@ List<String> responses = List.filled(6, "");
   }
 
   void _populateFields(List<String> response) {
-    _addressLine1Controller.text = response[0];
-    _addressLine2Controller.text = response[1];
-    _cityController.text = response[2];
-    _stateController.text = response[3];
-    _zipController.text = response[4];
-    _countryController.text = response[5];
+    if (response.isNotEmpty && response[0] != _addressLine1Controller.text) _addressLine1Controller.text = response[0];
+    if (response.length > 1 && response[1] != _addressLine2Controller.text) _addressLine2Controller.text = response[1];
+    if (response.length > 2 && response[2] != _cityController.text) _cityController.text = response[2];
+    if (response.length > 3 && response[3] != _stateController.text) _stateController.text = response[3];
+    if (response.length > 4 && response[4] != _zipController.text) _zipController.text = response[4];
+    if (response.length > 5 && response[5] != _countryController.text) _countryController.text = response[5];
   }
 
   void _updateResponse() {

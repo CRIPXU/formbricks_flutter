@@ -42,9 +42,9 @@ class _FreeTextQuestionState extends State<FreeTextQuestion> {
   @override
   void didUpdateWidget(covariant FreeTextQuestion oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.response != oldWidget.response) {
-      _controller.text = widget.response;
-      _currentValue = widget.response;
+    if (widget.response != oldWidget.response && (widget.response ?? '') != _controller.text) {
+      _controller.text = widget.response ?? '';
+      _currentValue = widget.response ?? '';
     }
   }
 
