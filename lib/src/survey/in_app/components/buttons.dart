@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../formbricks_flutter.dart';
+import '../../../utils/helper.dart';
 
 class SurveyButtons extends StatelessWidget {
   final int currentStep;
@@ -43,8 +44,18 @@ class SurveyButtons extends StatelessWidget {
                     survey.isBackButtonHidden == false)
                   OutlinedButton(
                     onPressed: previousStep,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Theme.of(context).primaryColor,
+                      side: BorderSide(color: Theme.of(context).primaryColor),
+                    ),
                     child: Text(
-                      previousLabel ?? AppLocalizations.of(context)!.back,
+                      stripHtml(previousLabel).isNotEmpty 
+                          ? stripHtml(previousLabel) 
+                          : AppLocalizations.of(context)!.back,
+                      style: TextStyle(
+                        color: Theme.of(context).primaryColor,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 if (currentStep > 0 && survey.isBackButtonHidden == true)
@@ -64,8 +75,18 @@ class SurveyButtons extends StatelessWidget {
                               Navigator.of(context).pop();
                             }
                           : nextStep,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).primaryColor,
+                        foregroundColor: Colors.white,
+                      ),
                       child: Text(
-                        nextLabel ?? AppLocalizations.of(context)!.next,
+                        stripHtml(nextLabel).isNotEmpty 
+                            ? stripHtml(nextLabel) 
+                            : AppLocalizations.of(context)!.next,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
               ],
